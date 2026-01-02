@@ -41,16 +41,16 @@ Benchmarks.
 
 ###### AMD.Ryzen.9.9950X - EnumerateLinesSpanUTF16 Benchmark Results (SimdSharp 0.0.2.0, System 10.0.125.57005)
 
-| Method                   | MaxLineLength | Mean        | Ratio | Allocated | Alloc Ratio |
-|------------------------- |-------------- |------------:|------:|----------:|------------:|
-| EnumerateLines_BCL       | 0             | 3,319.38 μs |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp | 0             |   499.39 μs |  0.15 |         - |          NA |
-|                          |               |             |       |           |             |
-| EnumerateLines_BCL       | 8             | 1,229.54 μs |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp | 8             |   313.22 μs |  0.25 |         - |          NA |
-|                          |               |             |       |           |             |
-| EnumerateLines_BCL       | 128           |   112.96 μs |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp | 128           |    29.63 μs |  0.26 |         - |          NA |
+| Method                   | TotalLength | MaxLineLength | Mean         | Ratio | Allocated | Alloc Ratio |
+|------------------------- |------------ |-------------- |-------------:|------:|----------:|------------:|
+| EnumerateLines_BCL       | 32768       | 0             | 101,821.7 ns |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 32768       | 0             |  14,516.2 ns |  0.14 |         - |          NA |
+|                          |             |               |              |       |           |             |
+| EnumerateLines_BCL       | 32768       | 8             |  37,326.2 ns |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 32768       | 8             |   6,533.8 ns |  0.18 |         - |          NA |
+|                          |             |               |              |       |           |             |
+| EnumerateLines_BCL       | 32768       | 128           |   3,509.4 ns |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 32768       | 128           |     885.5 ns |  0.25 |         - |          NA |
 
 
 ## Example Catalogue

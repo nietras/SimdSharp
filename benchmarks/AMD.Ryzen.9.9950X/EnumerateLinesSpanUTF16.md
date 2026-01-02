@@ -11,13 +11,13 @@ Runtime=.NET 10.0  Toolchain=net10.0  IterationTime=350ms
 MaxIterationCount=7  MinIterationCount=3  WarmupCount=3  
 
 ```
-| Method                   | TotalLength | MaxLineLength | Mean        | Ratio | Allocated | Alloc Ratio |
-|------------------------- |------------ |-------------- |------------:|------:|----------:|------------:|
-| EnumerateLines_BCL       | 1048576     | 0             | 3,305.69 μs |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp | 1048576     | 0             |   493.82 μs |  0.15 |         - |          NA |
-|                          |             |               |             |       |           |             |
-| EnumerateLines_BCL       | 1048576     | 8             | 1,222.63 μs |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp | 1048576     | 8             |   311.43 μs |  0.25 |         - |          NA |
-|                          |             |               |             |       |           |             |
-| EnumerateLines_BCL       | 1048576     | 128           |   112.13 μs |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp | 1048576     | 128           |    29.35 μs |  0.26 |         - |          NA |
+| Method                   | TotalLength | MaxLineLength | Mean         | Ratio | Allocated | Alloc Ratio |
+|------------------------- |------------ |-------------- |-------------:|------:|----------:|------------:|
+| EnumerateLines_BCL       | 32768       | 0             | 101,821.7 ns |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 32768       | 0             |  14,516.2 ns |  0.14 |         - |          NA |
+|                          |             |               |              |       |           |             |
+| EnumerateLines_BCL       | 32768       | 8             |  37,326.2 ns |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 32768       | 8             |   6,533.8 ns |  0.18 |         - |          NA |
+|                          |             |               |              |       |           |             |
+| EnumerateLines_BCL       | 32768       | 128           |   3,509.4 ns |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 32768       | 128           |     885.5 ns |  0.25 |         - |          NA |

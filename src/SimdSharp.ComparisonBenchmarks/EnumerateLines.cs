@@ -17,7 +17,7 @@ public class EnumerateLinesSpanUTF16
 
     [ParamsSource(nameof(TotalLengthParams))]
     public int TotalLength { get; set; }
-    public IEnumerable<int> TotalLengthParams() => [1024 * 1024];
+    public IEnumerable<int> TotalLengthParams() => [32 * 1024];
 
     [ParamsSource(nameof(MaxLineLengthParams))]
     public int MaxLineLength { get; set; }
