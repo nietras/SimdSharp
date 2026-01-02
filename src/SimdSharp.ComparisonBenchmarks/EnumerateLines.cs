@@ -15,7 +15,7 @@ public class EnumerateLinesSpanUTF8
 {
     string m_text = "";
 
-    [ParamsSource(nameof(MaxLineLengthParams))] // Attributes for params is challenging 👇
+    [ParamsSource(nameof(MaxLineLengthParams))]
     public int MaxLineLength { get; set; }
     public IEnumerable<int> MaxLineLengthParams() => [0, 8, 128];
 
