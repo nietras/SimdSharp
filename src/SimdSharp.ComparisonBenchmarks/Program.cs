@@ -57,7 +57,8 @@ if (args.Length > 0)
 
     var nameToBenchTypesSet = new Dictionary<string, Type[]>()
     {
-        { nameof(TestBench), new[] { typeof(TestBench), } },
+        { nameof(EnumerateLinesSpanUTF8), new[] { typeof(EnumerateLinesSpanUTF8), } },
+        //{ nameof(TestBench), new[] { typeof(TestBench), } },
     };
     foreach (var (name, benchTypes) in nameToBenchTypesSet)
     {
