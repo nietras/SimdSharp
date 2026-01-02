@@ -19,13 +19,14 @@ public sealed class SimdTest_EnumerateLines
             "trailing\nnewline\n",
             "\nstarts with newline",
             "\"quoted line\" and more",
-            //GenerateRandomText(seed: 1234, totalLength: 2_048, maxLineLength: 64)
+            GenerateRandomText(seed: 1234, totalLength: 2_048, maxLineLength: 64)
         ];
 
     [TestMethod]
     [DynamicData(nameof(EnumerateLinesTestData))]
     public void SimdEnumerateLinesMatchesMemoryExtensions(string text)
     {
+        //SpanLineEnumerator
         var expectedEnumerator = MemoryExtensions.EnumerateLines(text);
         var actualEnumerator = Simd.EnumerateLines(text);
 

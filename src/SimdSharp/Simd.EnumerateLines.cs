@@ -21,15 +21,22 @@ public static partial class Simd
     public ref struct MaskSpanLineEnumeratorUTF16 : IEnumerator<ReadOnlySpan<char>>
     {
         readonly ReadOnlySpan<char> _span;
-        int _lineStart = 0;
-        int _position = 0;
-        long _mask = 0;
-        int _currentStart = 0;
-        int _currentLength = 0;
+        int _lineStart;
+        int _simdPosition;
+        long _mask;
+        int _currentStart;
+        int _currentLength;
+        bool _isEnumeratorActive;
 
         internal MaskSpanLineEnumeratorUTF16(ReadOnlySpan<char> span)
         {
             _span = span;
+            _lineStart = 0;
+            _simdPosition = 0;
+            _mask = 0;
+            _currentStart = 0;
+            _currentLength = 0;
+            _isEnumeratorActive = true;
         }
 
         /// <summary>
@@ -51,93 +58,95 @@ public static partial class Simd
         /// </returns>
         public bool MoveNext()
         {
-            var span = _span;
-            if (_lineStart >= span.Length)
+            if (!_isEnumeratorActive)
             {
+                _currentStart = 0;
                 _currentLength = 0;
                 return false;
             }
 
+            var span = _span;
             var start = _lineStart;
             var newlineIndex = -1;
 
+            // SIMD path: search for \r or \n using Vector512
             while (true)
             {
+                // First, check if we have any bits left in the current mask
                 if (_mask != 0)
                 {
                     var bit = BitOperations.TrailingZeroCount((ulong)_mask);
-                    newlineIndex = (_position - Vector512<ushort>.Count) + bit;
                     _mask &= ~(1L << bit);
-                    break;
+
+                    // Calculate the absolute position in the span
+                    // The mask corresponds to the chunk that ended at _simdPosition
+                    var candidate = (_simdPosition - Vector512<ushort>.Count) + bit;
+
+                    if (candidate >= start)
+                    {
+                        newlineIndex = candidate;
+                        break;
+                    }
+                    continue;
                 }
 
-                var lf = Vector512.Create((ushort)'\n');
-                var cr = Vector512.Create((ushort)'\r');
-                if (_position <= span.Length - Vector512<ushort>.Count)
+                // Try to load and process the next Vector512 chunk
+                if (_simdPosition <= span.Length - Vector512<ushort>.Count)
                 {
-                    var chunk = MemoryMarshal.Cast<char, Vector512<ushort>>(span.Slice(_position, Vector512<ushort>.Count))[0];
+                    var lf = Vector512.Create((ushort)'\n');
+                    var cr = Vector512.Create((ushort)'\r');
+
+                    var chunk = MemoryMarshal.Cast<char, Vector512<ushort>>(span.Slice(_simdPosition, Vector512<ushort>.Count))[0];
                     var lfs = Vector512.Equals(chunk, lf);
                     var crs = Vector512.Equals(chunk, cr);
                     var matches = Vector512.BitwiseOr(lfs, crs);
                     _mask = (long)Vector512.ExtractMostSignificantBits(matches);
-                    _position += Vector512<ushort>.Count;
-
-                    if (_mask != 0)
-                    {
-                        continue;
-                    }
+                    _simdPosition += Vector512<ushort>.Count;
 
                     continue;
                 }
 
+                // No more full vectors to process, exit SIMD loop
                 break;
             }
 
+            // Scalar fallback: search remaining characters not covered by SIMD
             if (newlineIndex == -1)
             {
-                for (; _position < span.Length; _position++)
+                // Search from where SIMD left off (or from start if no SIMD processing occurred)
+                var scalarStart = Math.Max(start, _simdPosition);
+                for (var i = scalarStart; i < span.Length; i++)
                 {
-                    var ch = span[_position];
+                    var ch = span[i];
                     if (ch == '\n' || ch == '\r')
                     {
-                        newlineIndex = _position;
-                        _position++;
+                        newlineIndex = i;
                         break;
                     }
                 }
             }
 
-            if (newlineIndex == -1)
+            if (newlineIndex >= 0)
             {
-                if (start >= span.Length)
+                int stride = 1;
+
+                if (span[newlineIndex] == '\r' &&
+                    (uint)(newlineIndex + 1) < (uint)span.Length &&
+                    span[newlineIndex + 1] == '\n')
                 {
-                    _lineStart = span.Length + 1;
-                    _currentLength = 0;
-                    return false;
+                    stride = 2;
                 }
 
                 _currentStart = start;
+                _currentLength = newlineIndex - start;
+                _lineStart = newlineIndex + stride;
+            }
+            else
+            {
+                // No more newlines found - return the final segment
+                _currentStart = start;
                 _currentLength = span.Length - start;
-                _lineStart = span.Length + 1;
-                _mask = 0;
-                _position = span.Length;
-                return true;
-            }
-
-            var stride = 1;
-            var newlineChar = span[newlineIndex];
-            if (newlineChar == '\r' && newlineIndex + 1 < span.Length && span[newlineIndex + 1] == '\n')
-            {
-                stride = 2;
-            }
-
-            _currentStart = start;
-            _currentLength = newlineIndex - start;
-            _lineStart = newlineIndex + stride;
-
-            if (_lineStart > _position)
-            {
-                _position = _lineStart;
+                _isEnumeratorActive = false;
             }
 
             return true;
