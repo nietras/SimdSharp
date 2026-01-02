@@ -43,14 +43,14 @@ Benchmarks.
 
 | Method                   | MaxLineLength | Mean        | Ratio | Allocated | Alloc Ratio |
 |------------------------- |-------------- |------------:|------:|----------:|------------:|
-| EnumerateLines_BCL       | 0             | 3,300.44 μs |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp | 0             |   533.96 μs |  0.16 |         - |          NA |
+| EnumerateLines_BCL       | 0             | 3,319.38 μs |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 0             |   499.39 μs |  0.15 |         - |          NA |
 |                          |               |             |       |           |             |
-| EnumerateLines_BCL       | 8             | 1,219.85 μs |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp | 8             |   315.16 μs |  0.26 |         - |          NA |
+| EnumerateLines_BCL       | 8             | 1,229.54 μs |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 8             |   313.22 μs |  0.25 |         - |          NA |
 |                          |               |             |       |           |             |
-| EnumerateLines_BCL       | 128           |   112.75 μs |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp | 128           |    32.53 μs |  0.29 |         - |          NA |
+| EnumerateLines_BCL       | 128           |   112.96 μs |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 128           |    29.63 μs |  0.26 |         - |          NA |
 
 
 ## Example Catalogue

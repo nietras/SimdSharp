@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
@@ -112,6 +113,7 @@ public static partial class Simd
             return true;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         int SearchWithVector512(ReadOnlySpan<char> span, int start)
         {
             var lf = Vector512.Create((ushort)'\n');
@@ -123,7 +125,7 @@ public static partial class Simd
                 if (_mask != 0)
                 {
                     var bit = BitOperations.TrailingZeroCount(_mask);
-                    _mask &= ~(1ul << bit);
+                    _mask &= (_mask - 1);
 
                     // Calculate the absolute position in the span
                     var candidate = (_simdPosition - Vector512<ushort>.Count) + bit;
@@ -153,6 +155,7 @@ public static partial class Simd
             return -1;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         int SearchWithVector256(ReadOnlySpan<char> span, int start)
         {
             var lf = Vector256.Create((ushort)'\n');
@@ -164,7 +167,7 @@ public static partial class Simd
                 if (_mask != 0)
                 {
                     var bit = BitOperations.TrailingZeroCount(_mask);
-                    _mask &= ~(1ul << bit);
+                    _mask &= (_mask - 1);
 
                     // Calculate the absolute position in the span
                     var candidate = (_simdPosition - Vector256<ushort>.Count) + bit;
@@ -194,6 +197,7 @@ public static partial class Simd
             return -1;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         int SearchWithVector128(ReadOnlySpan<char> span, int start)
         {
             var lf = Vector128.Create((ushort)'\n');
@@ -205,7 +209,7 @@ public static partial class Simd
                 if (_mask != 0)
                 {
                     var bit = BitOperations.TrailingZeroCount(_mask);
-                    _mask &= ~(1ul << bit);
+                    _mask &= (_mask - 1);
 
                     // Calculate the absolute position in the span
                     var candidate = (_simdPosition - Vector128<ushort>.Count) + bit;
