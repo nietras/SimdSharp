@@ -57,7 +57,7 @@ if (args.Length > 0)
 
     var nameToBenchTypesSet = new Dictionary<string, Type[]>()
     {
-        { nameof(EnumerateLinesSpanUTF8), new[] { typeof(EnumerateLinesSpanUTF8), } },
+        { nameof(EnumerateLinesSpanUTF16), new[] { typeof(EnumerateLinesSpanUTF16), } },
         //{ nameof(TestBench), new[] { typeof(TestBench), } },
     };
     foreach (var (name, benchTypes) in nameToBenchTypesSet)
@@ -88,7 +88,7 @@ if (args.Length > 0)
 }
 else
 {
-    var b = new EnumerateLinesSpanUTF8();
+    var b = new EnumerateLinesSpanUTF16();
     b.GlobalSetup();
     b.EnumerateLines_SimdSharp();
 #if !DEBUG

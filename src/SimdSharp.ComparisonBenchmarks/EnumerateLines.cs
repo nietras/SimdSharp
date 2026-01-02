@@ -11,7 +11,7 @@ namespace SimdSharp.ComparisonBenchmarks;
 [WarmupCount(3)]
 [MinIterationCount(3)]
 [MaxIterationCount(7)]
-public class EnumerateLinesSpanUTF8
+public class EnumerateLinesSpanUTF16
 {
     string m_text = "";
 

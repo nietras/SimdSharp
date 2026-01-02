@@ -13,11 +13,11 @@ MaxIterationCount=7  MinIterationCount=3  WarmupCount=3
 ```
 | Method                   | MaxLineLength | Mean        | Ratio | Allocated | Alloc Ratio |
 |------------------------- |-------------- |------------:|------:|----------:|------------:|
-| EnumerateLines_BCL       | 0             | 3,298.27 μs |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp | 0             |   529.66 μs |  0.16 |         - |          NA |
+| EnumerateLines_BCL       | 0             | 3,300.44 μs |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 0             |   533.96 μs |  0.16 |         - |          NA |
 |                          |               |             |       |           |             |
-| EnumerateLines_BCL       | 8             | 1,218.31 μs |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp | 8             |   312.35 μs |  0.26 |         - |          NA |
+| EnumerateLines_BCL       | 8             | 1,219.85 μs |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 8             |   315.16 μs |  0.26 |         - |          NA |
 |                          |               |             |       |           |             |
-| EnumerateLines_BCL       | 128           |   111.78 μs |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp | 128           |    30.49 μs |  0.27 |         - |          NA |
+| EnumerateLines_BCL       | 128           |   112.75 μs |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 128           |    32.53 μs |  0.29 |         - |          NA |

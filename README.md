@@ -37,14 +37,20 @@ Benchmarks.
 
 #### Comparison Benchmarks
 
-##### Test Benchmark Results
-Test.
+##### EnumerateLinesSpanUTF16 Benchmark Results
 
-###### AMD.Ryzen.9.9950X - Test Benchmark Results (SimdSharp 0.0.2.0, System 10.0.125.57005)
+###### AMD.Ryzen.9.9950X - EnumerateLinesSpanUTF16 Benchmark Results (SimdSharp 0.0.2.0, System 10.0.125.57005)
 
-| Method          | Scope | Count | Mean   | Ratio | Allocated | Alloc Ratio |
-|---------------- |------ |------ |-------:|------:|----------:|------------:|
-| SimdSharp______ | Test  | 25000 | 0.0 ns |     ? |         - |           ? |
+| Method                   | MaxLineLength | Mean        | Ratio | Allocated | Alloc Ratio |
+|------------------------- |-------------- |------------:|------:|----------:|------------:|
+| EnumerateLines_BCL       | 0             | 3,300.44 μs |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 0             |   533.96 μs |  0.16 |         - |          NA |
+|                          |               |             |       |           |             |
+| EnumerateLines_BCL       | 8             | 1,219.85 μs |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 8             |   315.16 μs |  0.26 |         - |          NA |
+|                          |               |             |       |           |             |
+| EnumerateLines_BCL       | 128           |   112.75 μs |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 128           |    32.53 μs |  0.29 |         - |          NA |
 
 
 ## Example Catalogue
