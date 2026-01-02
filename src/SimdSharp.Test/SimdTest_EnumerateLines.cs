@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -36,11 +34,11 @@ public sealed class SimdTest_EnumerateLines
             var expected = expectedEnumerator.Current;
             var actual = actualEnumerator.Current;
             Assert.AreEqual(expected.Length, actual.Length);
-            Assert.IsTrue(Unsafe.AreSame(ref MemoryMarshal.GetReference(expected), ref MemoryMarshal.GetReference(actual)));
+            AssertEx.AreSame(expected, actual);
         }
     }
 
-    private static string GenerateRandomText(int seed, int totalLength, int maxLineLength)
+    static string GenerateRandomText(int seed, int totalLength, int maxLineLength)
     {
         var random = new Random(seed);
         var sb = new StringBuilder(totalLength);

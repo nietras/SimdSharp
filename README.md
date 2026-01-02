@@ -40,7 +40,7 @@ Benchmarks.
 ##### Test Benchmark Results
 Test.
 
-###### AMD.Ryzen.9.9950X - Test Benchmark Results (SimdSharp 0.0.0.0, System  10.0.125.57005)
+###### AMD.Ryzen.9.9950X - Test Benchmark Results (SimdSharp 0.0.2.0, System 10.0.125.57005)
 
 | Method          | Scope | Count | Mean   | Ratio | Allocated | Alloc Ratio |
 |---------------- |------ |------ |-------:|------:|----------:|------------:|
@@ -72,6 +72,15 @@ Simd.Empty();
 [assembly: System.Runtime.Versioning.TargetFramework(".NETCoreApp,Version=v10.0", FrameworkDisplayName=".NET 10.0")]
 namespace SimdSharp
 {
-    public static class Simd { }
+    public static class Simd
+    {
+        public static SimdSharp.Simd.MaskSpanLineEnumeratorUTF16 EnumerateLines(System.ReadOnlySpan<char> span) { }
+        public ref struct MaskSpanLineEnumeratorUTF16 : System.Collections.Generic.IEnumerator<System.ReadOnlySpan<char>>, System.Collections.IEnumerator, System.IDisposable
+        {
+            public System.ReadOnlySpan<char> Current { get; }
+            public SimdSharp.Simd.MaskSpanLineEnumeratorUTF16 GetEnumerator() { }
+            public bool MoveNext() { }
+        }
+    }
 }
 ```
