@@ -23,7 +23,7 @@ public static partial class Simd
         readonly ReadOnlySpan<char> _span;
         int _lineStart = 0;
         int _simdPosition = 0;
-        long _mask = 0;
+        ulong _mask = 0;
         int _currentStart = 0;
         int _currentLength = 0;
         bool _isEnumeratorActive = true;
@@ -60,45 +60,18 @@ public static partial class Simd
             var start = _lineStart;
             var newlineIndex = -1;
 
-            // SIMD path: search for \r or \n using Vector512
-            while (true)
+            // SIMD path: search for \r or \n using best available vector size
+            if (Vector512.IsHardwareAccelerated)
             {
-                // First, check if we have any bits left in the current mask
-                if (_mask != 0)
-                {
-                    var bit = BitOperations.TrailingZeroCount((ulong)_mask);
-                    _mask &= ~(1L << bit);
-
-                    // Calculate the absolute position in the span
-                    // The mask corresponds to the chunk that ended at _simdPosition
-                    var candidate = (_simdPosition - Vector512<ushort>.Count) + bit;
-
-                    if (candidate >= start)
-                    {
-                        newlineIndex = candidate;
-                        break;
-                    }
-                    continue;
-                }
-
-                // Try to load and process the next Vector512 chunk
-                if (_simdPosition <= span.Length - Vector512<ushort>.Count)
-                {
-                    var lf = Vector512.Create((ushort)'\n');
-                    var cr = Vector512.Create((ushort)'\r');
-
-                    var chunk = MemoryMarshal.Cast<char, Vector512<ushort>>(span.Slice(_simdPosition, Vector512<ushort>.Count))[0];
-                    var lfs = Vector512.Equals(chunk, lf);
-                    var crs = Vector512.Equals(chunk, cr);
-                    var matches = Vector512.BitwiseOr(lfs, crs);
-                    _mask = (long)Vector512.ExtractMostSignificantBits(matches);
-                    _simdPosition += Vector512<ushort>.Count;
-
-                    continue;
-                }
-
-                // No more full vectors to process, exit SIMD loop
-                break;
+                newlineIndex = SearchWithVector512(span, start);
+            }
+            else if (Vector256.IsHardwareAccelerated)
+            {
+                newlineIndex = SearchWithVector256(span, start);
+            }
+            else if (Vector128.IsHardwareAccelerated)
+            {
+                newlineIndex = SearchWithVector128(span, start);
             }
 
             // Scalar fallback: search remaining characters not covered by SIMD using IndexOfAny
@@ -137,6 +110,129 @@ public static partial class Simd
             }
 
             return true;
+        }
+
+        int SearchWithVector512(ReadOnlySpan<char> span, int start)
+        {
+            var lf = Vector512.Create((ushort)'\n');
+            var cr = Vector512.Create((ushort)'\r');
+
+            while (true)
+            {
+                // First, check if we have any bits left in the current mask
+                if (_mask != 0)
+                {
+                    var bit = BitOperations.TrailingZeroCount(_mask);
+                    _mask &= ~(1ul << bit);
+
+                    // Calculate the absolute position in the span
+                    var candidate = (_simdPosition - Vector512<ushort>.Count) + bit;
+
+                    if (candidate >= start)
+                    {
+                        return candidate;
+                    }
+                    continue;
+                }
+
+                // Try to load and process the next Vector512 chunk
+                if (_simdPosition <= span.Length - Vector512<ushort>.Count)
+                {
+                    var chunk = MemoryMarshal.Cast<char, Vector512<ushort>>(span.Slice(_simdPosition, Vector512<ushort>.Count))[0];
+                    var lfs = Vector512.Equals(chunk, lf);
+                    var crs = Vector512.Equals(chunk, cr);
+                    var matches = Vector512.BitwiseOr(lfs, crs);
+                    _mask = Vector512.ExtractMostSignificantBits(matches);
+                    _simdPosition += Vector512<ushort>.Count;
+                    continue;
+                }
+
+                break;
+            }
+
+            return -1;
+        }
+
+        int SearchWithVector256(ReadOnlySpan<char> span, int start)
+        {
+            var lf = Vector256.Create((ushort)'\n');
+            var cr = Vector256.Create((ushort)'\r');
+
+            while (true)
+            {
+                // First, check if we have any bits left in the current mask
+                if (_mask != 0)
+                {
+                    var bit = BitOperations.TrailingZeroCount(_mask);
+                    _mask &= ~(1ul << bit);
+
+                    // Calculate the absolute position in the span
+                    var candidate = (_simdPosition - Vector256<ushort>.Count) + bit;
+
+                    if (candidate >= start)
+                    {
+                        return candidate;
+                    }
+                    continue;
+                }
+
+                // Try to load and process the next Vector256 chunk
+                if (_simdPosition <= span.Length - Vector256<ushort>.Count)
+                {
+                    var chunk = MemoryMarshal.Cast<char, Vector256<ushort>>(span.Slice(_simdPosition, Vector256<ushort>.Count))[0];
+                    var lfs = Vector256.Equals(chunk, lf);
+                    var crs = Vector256.Equals(chunk, cr);
+                    var matches = Vector256.BitwiseOr(lfs, crs);
+                    _mask = Vector256.ExtractMostSignificantBits(matches);
+                    _simdPosition += Vector256<ushort>.Count;
+                    continue;
+                }
+
+                break;
+            }
+
+            return -1;
+        }
+
+        int SearchWithVector128(ReadOnlySpan<char> span, int start)
+        {
+            var lf = Vector128.Create((ushort)'\n');
+            var cr = Vector128.Create((ushort)'\r');
+
+            while (true)
+            {
+                // First, check if we have any bits left in the current mask
+                if (_mask != 0)
+                {
+                    var bit = BitOperations.TrailingZeroCount(_mask);
+                    _mask &= ~(1ul << bit);
+
+                    // Calculate the absolute position in the span
+                    var candidate = (_simdPosition - Vector128<ushort>.Count) + bit;
+
+                    if (candidate >= start)
+                    {
+                        return candidate;
+                    }
+                    continue;
+                }
+
+                // Try to load and process the next Vector128 chunk
+                if (_simdPosition <= span.Length - Vector128<ushort>.Count)
+                {
+                    var chunk = MemoryMarshal.Cast<char, Vector128<ushort>>(span.Slice(_simdPosition, Vector128<ushort>.Count))[0];
+                    var lfs = Vector128.Equals(chunk, lf);
+                    var crs = Vector128.Equals(chunk, cr);
+                    var matches = Vector128.BitwiseOr(lfs, crs);
+                    _mask = Vector128.ExtractMostSignificantBits(matches);
+                    _simdPosition += Vector128<ushort>.Count;
+                    continue;
+                }
+
+                break;
+            }
+
+            return -1;
         }
 
         /// <inheritdoc />
