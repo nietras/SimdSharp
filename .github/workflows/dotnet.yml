@@ -156,8 +156,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.NuGetDirectory }}/Sep.${{ github.event.inputs.version }}.nupkg
-          asset_name: Sep.${{ github.event.inputs.version }}.nupkg
+          asset_path: ${{ env.NuGetDirectory }}/SimdSharp.${{ github.event.inputs.version }}.nupkg
+          asset_name: SimdSharp.${{ github.event.inputs.version }}.nupkg
           asset_content_type: application/zip
       - name: Upload snupkg package
         uses: actions/upload-release-asset@e8f9f06c4b078e705bd2ea027f0926603fc9b4d5 # v1.0.2
@@ -165,8 +165,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.NuGetDirectory }}/Sep.${{ github.event.inputs.version }}.snupkg
-          asset_name: Sep.${{ github.event.inputs.version }}.snupkg
+          asset_path: ${{ env.NuGetDirectory }}/SimdSharp.${{ github.event.inputs.version }}.snupkg
+          asset_name: SimdSharp.${{ github.event.inputs.version }}.snupkg
           asset_content_type: application/zip
       - name: Setup .NET
         uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
@@ -179,6 +179,6 @@ jobs:
         with:
           user: ${{ secrets.NUGET_USER }}
       - name: Push nupkg package
-        run: dotnet nuget push ${{ env.NuGetDirectory }}/Sep.${{ github.event.inputs.version }}.nupkg --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        run: dotnet nuget push ${{ env.NuGetDirectory }}/SimdSharp.${{ github.event.inputs.version }}.nupkg --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
       - name: Push snupkg package
-        run: dotnet nuget push ${{ env.NuGetDirectory }}/Sep.${{ github.event.inputs.version }}.snupkg --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        run: dotnet nuget push ${{ env.NuGetDirectory }}/SimdSharp.${{ github.event.inputs.version }}.snupkg --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
