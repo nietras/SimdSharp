@@ -21,33 +21,24 @@ public static partial class Simd
     public ref struct MaskSpanLineEnumeratorUTF16 : IEnumerator<ReadOnlySpan<char>>
     {
         readonly ReadOnlySpan<char> _span;
-        int _lineStart;
-        int _simdPosition;
-        long _mask;
-        int _currentStart;
-        int _currentLength;
-        bool _isEnumeratorActive;
+        int _lineStart = 0;
+        int _simdPosition = 0;
+        long _mask = 0;
+        int _currentStart = 0;
+        int _currentLength = 0;
+        bool _isEnumeratorActive = true;
 
-        internal MaskSpanLineEnumeratorUTF16(ReadOnlySpan<char> span)
-        {
-            _span = span;
-            _lineStart = 0;
-            _simdPosition = 0;
-            _mask = 0;
-            _currentStart = 0;
-            _currentLength = 0;
-            _isEnumeratorActive = true;
-        }
+        internal MaskSpanLineEnumeratorUTF16(ReadOnlySpan<char> span) => _span = span;
 
         /// <summary>
         /// Gets the line at the current position of the enumerator.
         /// </summary>
-        public ReadOnlySpan<char> Current => _span.Slice(_currentStart, _currentLength);
+        public readonly ReadOnlySpan<char> Current => _span.Slice(_currentStart, _currentLength);
 
         /// <summary>
         /// Returns this instance as an enumerator.
         /// </summary>
-        public MaskSpanLineEnumeratorUTF16 GetEnumerator() => this;
+        public readonly MaskSpanLineEnumeratorUTF16 GetEnumerator() => this;
 
         /// <summary>
         /// Advances the enumerator to the next line of the span.
@@ -110,19 +101,15 @@ public static partial class Simd
                 break;
             }
 
-            // Scalar fallback: search remaining characters not covered by SIMD
+            // Scalar fallback: search remaining characters not covered by SIMD using IndexOfAny
             if (newlineIndex == -1)
             {
-                // Search from where SIMD left off (or from start if no SIMD processing occurred)
                 var scalarStart = Math.Max(start, _simdPosition);
-                for (var i = scalarStart; i < span.Length; i++)
+                var remaining = span.Slice(scalarStart);
+                var idx = remaining.IndexOfAny('\n', '\r');
+                if (idx >= 0)
                 {
-                    var ch = span[i];
-                    if (ch == '\n' || ch == '\r')
-                    {
-                        newlineIndex = i;
-                        break;
-                    }
+                    newlineIndex = scalarStart + idx;
                 }
             }
 
@@ -153,12 +140,12 @@ public static partial class Simd
         }
 
         /// <inheritdoc />
-        object IEnumerator.Current => throw new NotSupportedException();
+        readonly object IEnumerator.Current => throw new NotSupportedException();
 
         /// <inheritdoc />
-        void IEnumerator.Reset() => throw new NotSupportedException();
+        readonly void IEnumerator.Reset() => throw new NotSupportedException();
 
         /// <inheritdoc />
-        void IDisposable.Dispose() { }
+        readonly void IDisposable.Dispose() { }
     }
 }
