@@ -24,6 +24,7 @@ public class EnumerateLinesSpanUTF8
     {
         m_text = GenerateText(maxLineLength: MaxLineLength);
     }
+
     //[Benchmark]
     public void ReadLine_BCL()
     {
