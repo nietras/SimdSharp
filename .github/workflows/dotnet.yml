@@ -44,16 +44,6 @@ jobs:
 
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
-      - name: Setup .NET (8.0.x)
-        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
-        with:
-          dotnet-version: |
-            8.0.x
-      - name: Setup .NET (9.0.x)
-        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
-        with:
-          dotnet-version: |
-            9.0.x
       - name: Setup .NET (global.json)
         uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
         with:
@@ -112,28 +102,10 @@ jobs:
         if: ${{ github.event.inputs.version != '' && github.actor == 'nietras' }}
         run: |
           git tag v${{ github.event.inputs.version }}
-      - name: Setup .NET (old versions)
-        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
-        with:
-          dotnet-version: |
-            8.0.x
       - name: Setup .NET (global.json)
         uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
         with:
           global-json-file: global.json
-      # No need to define min ver version globally now since only uploading release
-      # when version and tag is defined.
-      # - name: Install MinVer
-      #   run:  dotnet tool install --global minver-cli --version 4.3.0
-      # - name: Run MinVer
-      #   run:  minver -v d -t v -p preview
-      # - name: Run MinVer (output)
-      #   id: minverrun
-      #   run: |
-      #     echo "MINVERVERSIONOVERRIDE=$(minver -v d -t v -p preview)" >> $env:GITHUB_ENV
-      # - name: Output MinVer
-      #   run: |
-      #     echo "${{ env.MINVERVERSIONOVERRIDE }}"
       - name: Pack nuget package
         run: dotnet pack -c Release --output ${{ env.NuGetDirectory }}
       - name: Get version of dll
