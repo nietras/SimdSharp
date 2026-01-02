@@ -128,7 +128,7 @@ public static partial class Simd
 
             if (newlineIndex >= 0)
             {
-                int stride = 1;
+                var stride = 1;
 
                 if (span[newlineIndex] == '\r' &&
                     (uint)(newlineIndex + 1) < (uint)span.Length &&
