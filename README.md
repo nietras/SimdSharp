@@ -33,6 +33,8 @@ For more examples see [Example Catalogue](#example-catalogue).
 ## Benchmarks
 Benchmarks.
 
+### Detailed Benchmarks
+
 #### Comparison Benchmarks
 
 ##### Test Benchmark Results
