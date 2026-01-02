@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using BenchmarkDotNet.Attributes;
@@ -14,14 +15,17 @@ public class EnumerateLinesSpanUTF8
 {
     string m_text = "";
 
+    [ParamsSource(nameof(MaxLineLengthParams))] // Attributes for params is challenging 👇
+    public int MaxLineLength { get; set; }
+    public IEnumerable<int> MaxLineLengthParams() => [0, 8, 128];
+
     [GlobalSetup]
     public void GlobalSetup()
     {
-        m_text = GenerateText();
+        m_text = GenerateText(maxLineLength: MaxLineLength);
     }
-
     //[Benchmark]
-    public void ReadLine_()
+    public void ReadLine_BCL()
     {
         using var reader = new StringReader(m_text);
         var sum = 0;
@@ -31,41 +35,42 @@ public class EnumerateLinesSpanUTF8
         }
     }
 
-    [Benchmark]
-    public void EnumerateLines_BCL()
+    [Benchmark(Baseline = true)]
+    public nint EnumerateLines_BCL()
     {
-        var lines = MemoryExtensions.EnumerateLines(m_text);
-        var sum = 0;
-        foreach (var line in lines)
+        nint sum = 0;
+        foreach (var line in MemoryExtensions.EnumerateLines(m_text))
         {
             sum += line.Length;
         }
+        return sum;
     }
 
     [Benchmark]
-    public void EnumerateLines_SimdSharp()
+    public nint EnumerateLines_SimdSharp()
     {
-        var sum = 0;
+        nint sum = 0;
         foreach (var line in Simd.EnumerateLines(m_text))
         {
             sum += line.Length;
         }
+        return sum;
     }
 
     static string GenerateText(int totalLength = 1024 * 1024, int maxLineLength = 100)
     {
-        var rnd = new Random(42);
+        var random = new Random(42);
         var sb = new StringBuilder(capacity: totalLength);
         var count = 0;
         while (count < totalLength)
         {
-            var lineLength = rnd.Next(1, maxLineLength + 1);
+            var lineLength = random.Next(1, maxLineLength + 1);
             if (count + lineLength + 1 > totalLength)
             {
                 lineLength = totalLength - count - 1;
                 if (lineLength <= 0) break;
             }
-            sb.Append((char)rnd.Next('a', 'z' + 1), lineLength);
+            sb.Append('a', lineLength);
             sb.Append('\n');
             count += lineLength + 1;
         }

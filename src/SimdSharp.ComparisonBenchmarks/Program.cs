@@ -88,25 +88,30 @@ if (args.Length > 0)
 }
 else
 {
-    var b = new TestBench();
-    b.SimdSharp______();
+    var b = new EnumerateLinesSpanUTF8();
+    b.GlobalSetup();
+    b.EnumerateLines_SimdSharp();
 #if !DEBUG
     for (var i = 0; i < 2; ++i)
     {
-        b.SimdSharp______();
+        b.EnumerateLines_SimdSharp();
     }
     Thread.Sleep(500);
 #endif
     var sw = new Stopwatch();
     sw.Restart();
-    b.SimdSharp______();
+    var result = b.EnumerateLines_SimdSharp();
+    var resultBCL = b.EnumerateLines_BCL();
+    if (result != resultBCL)
+    {
+        throw new InvalidOperationException($"Results are different SimdSharp={result} BCL={resultBCL}");
+    }
     var sep_ms = sw.ElapsedMilliseconds;
     log($"SimdSharp    {sep_ms:D4}");
     Thread.Sleep(300);
-    Thread.Sleep(300);
     for (var i = 0; i < 20; i++)
     {
-        b.SimdSharp______();
+        b.EnumerateLines_SimdSharp();
     }
 }
 
