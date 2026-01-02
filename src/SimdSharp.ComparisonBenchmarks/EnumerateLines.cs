@@ -15,6 +15,10 @@ public class EnumerateLinesSpanUTF16
 {
     string m_text = "";
 
+    [ParamsSource(nameof(TotalLengthParams))]
+    public int TotalLength { get; set; }
+    public IEnumerable<int> TotalLengthParams() => [1024 * 1024];
+
     [ParamsSource(nameof(MaxLineLengthParams))]
     public int MaxLineLength { get; set; }
     public IEnumerable<int> MaxLineLengthParams() => [0, 8, 128];
@@ -22,7 +26,7 @@ public class EnumerateLinesSpanUTF16
     [GlobalSetup]
     public void GlobalSetup()
     {
-        m_text = GenerateText(maxLineLength: MaxLineLength);
+        m_text = GenerateText(TotalLength, maxLineLength: MaxLineLength);
     }
 
     //[Benchmark]
