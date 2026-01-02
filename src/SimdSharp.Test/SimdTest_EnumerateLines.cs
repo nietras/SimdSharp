@@ -29,12 +29,12 @@ public sealed class SimdTest_EnumerateLines
         var expectedEnumerator = MemoryExtensions.EnumerateLines(text);
         var actualEnumerator = Simd.EnumerateLines(text);
 
-        while (AssertEx.AreEqualReturn(expectedEnumerator.MoveNext(), actualEnumerator.MoveNext()))
+        while (Assert.AreEqualReturn(expectedEnumerator.MoveNext(), actualEnumerator.MoveNext()))
         {
             var expected = expectedEnumerator.Current;
             var actual = actualEnumerator.Current;
             Assert.AreEqual(expected.Length, actual.Length);
-            AssertEx.AreSame(expected, actual);
+            Assert.AreSame(expected, actual);
         }
     }
 
