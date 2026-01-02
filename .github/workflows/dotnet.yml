@@ -1,0 +1,248 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: dotnet
+
+permissions: read-all
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version to tag and create"
+        required: false
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+  NuGetDirectory: ${{ github.workspace }}/nuget
+
+jobs:
+  build-and-test:
+    strategy:
+      matrix:
+        os:
+          [
+            ubuntu-latest,
+            windows-latest,
+            macos-latest,
+            windows-11-arm,
+            ubuntu-24.04-arm,
+          ]
+        configuration: [Debug, Release]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2 # v2.13.2
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Setup .NET (8.0.x)
+        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
+        with:
+          dotnet-version: |
+            8.0.x
+      - name: Setup .NET (9.0.x)
+        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
+        with:
+          dotnet-version: |
+            9.0.x
+      - name: Setup .NET (global.json)
+        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Restore dependencies
+        run: dotnet restore
+      - name: Build
+        run: dotnet build -c ${{ matrix.configuration }} --no-restore
+      - name: Test
+        run: dotnet test -c ${{ matrix.configuration }} --no-build --verbosity normal --collect:"XPlat Code Coverage"
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
+        with:
+          flags: ${{ matrix.os }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
+        with:
+          flags: ${{ matrix.configuration }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  format:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2 # v2.13.2
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: Setup .NET
+        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
+        with:
+          global-json-file: global.json
+      - name: Format verify no changes
+        run: dotnet format --verify-no-changes
+
+  test-parsers:
+    strategy:
+      matrix:
+        os:
+          [
+            ubuntu-latest,
+            windows-latest,
+            macos-latest,
+            windows-11-arm,
+            ubuntu-24.04-arm,
+          ]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2 # v2.13.2
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Setup .NET (8.0.x)
+        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
+        with:
+          dotnet-version: |
+            8.0.x
+      - name: Setup .NET (9.0.x)
+        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
+        with:
+          dotnet-version: |
+            9.0.x
+      - name: Setup .NET (global.json)
+        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Restore dependencies
+        run: dotnet restore
+      - name: Test Parsers
+        shell: pwsh
+        run: ./test-parsers.ps1
+
+  pack:
+    runs-on: windows-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2 # v2.13.2
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0 # Get all history to allow automatic versioning using MinVer
+      - name: Create tag (to set version of nuget package)
+        if: ${{ github.event.inputs.version != '' && github.actor == 'nietras' }}
+        run: |
+          git tag v${{ github.event.inputs.version }}
+      - name: Setup .NET (old versions)
+        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
+        with:
+          dotnet-version: |
+            8.0.x
+      - name: Setup .NET (global.json)
+        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
+        with:
+          global-json-file: global.json
+      # No need to define min ver version globally now since only uploading release
+      # when version and tag is defined.
+      # - name: Install MinVer
+      #   run:  dotnet tool install --global minver-cli --version 4.3.0
+      # - name: Run MinVer
+      #   run:  minver -v d -t v -p preview
+      # - name: Run MinVer (output)
+      #   id: minverrun
+      #   run: |
+      #     echo "MINVERVERSIONOVERRIDE=$(minver -v d -t v -p preview)" >> $env:GITHUB_ENV
+      # - name: Output MinVer
+      #   run: |
+      #     echo "${{ env.MINVERVERSIONOVERRIDE }}"
+      - name: Pack nuget package
+        run: dotnet pack -c Release --output ${{ env.NuGetDirectory }}
+      - name: Get version of dll
+        run: (Get-Item ./artifacts/bin/Sep/release_net8.0/Sep.dll).VersionInfo.ProductVersion
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: nuget
+          if-no-files-found: error
+          retention-days: 7
+          path: ${{ env.NuGetDirectory }}/*nupkg
+
+  create-release-push:
+    needs: [build-and-test, pack]
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    if: ${{ github.event.inputs.version != '' && github.actor == 'nietras' }}
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2 # v2.13.2
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: Download nuget packages
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: nuget
+          path: ${{ env.NuGetDirectory }}
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@0cb9c9b65d5d1901c1f53e5e66eaf4afd303e70e # v1.1.4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          release_name: ${{ github.event.inputs.version }}
+          draft: true
+      - name: Create tag (for release)
+        run: |
+          git tag v${{ github.event.inputs.version }}
+          git push origin v${{ github.event.inputs.version }}
+      - name: Upload nupkg package
+        uses: actions/upload-release-asset@e8f9f06c4b078e705bd2ea027f0926603fc9b4d5 # v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ env.NuGetDirectory }}/Sep.${{ github.event.inputs.version }}.nupkg
+          asset_name: Sep.${{ github.event.inputs.version }}.nupkg
+          asset_content_type: application/zip
+      - name: Upload snupkg package
+        uses: actions/upload-release-asset@e8f9f06c4b078e705bd2ea027f0926603fc9b4d5 # v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ env.NuGetDirectory }}/Sep.${{ github.event.inputs.version }}.snupkg
+          asset_name: Sep.${{ github.event.inputs.version }}.snupkg
+          asset_content_type: application/zip
+      - name: Setup .NET
+        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
+        with:
+          global-json-file: global.json
+      - name: Push nupkg package
+        run: dotnet nuget push ${{ env.NuGetDirectory }}/Sep.${{ github.event.inputs.version }}.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+      - name: Push snupkg package
+        run: dotnet nuget push ${{ env.NuGetDirectory }}/Sep.${{ github.event.inputs.version }}.snupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate

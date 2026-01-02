@@ -1,0 +1,41 @@
+name: bench
+
+permissions: read-all
+
+# configure manual trigger
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os:
+          [
+            windows-latest,
+            ubuntu-latest,
+            macos-latest,
+            windows-11-arm,
+            ubuntu-24.04-arm,
+          ]
+        configuration: [Release]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2 # v2.13.2
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: Setup .NET
+        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
+        with:
+          global-json-file: global.json
+      - name: Restore dependencies
+        run: dotnet restore
+      - name: Build
+        run: dotnet build -c ${{ matrix.configuration }} --no-restore
+      - name: Bench
+        run: dotnet run -c ${{ matrix.configuration }} -f net10.0 --no-restore --project src/Sep.Benchmarks/Sep.Benchmarks.csproj -- -m -d --iterationTime 300 --filter *
