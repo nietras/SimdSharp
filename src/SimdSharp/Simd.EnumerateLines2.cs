@@ -123,22 +123,29 @@ public static partial class Simd
             }
             if (mask == 0)
             {
-                var scalarStart = Math.Max(_lineStart, _searchPosition);
-                for (var i = scalarStart; i < span.Length; i++)
-                {
-                    var c = span[i];
-                    var lf = c == '\n' ? 1 : 0;
-                    var cr = c == '\r' ? 1 : 0;
-                    var m = lf | cr;
-                    if (m != 0)
-                    {
-                        mask = 1UL;
-                        _maskBasePosition = i;
-                        break;
-                    }
-                }
+                mask = SearchMaskScalar(span);
             }
             return mask;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        ulong SearchMaskScalar(ReadOnlySpan<char> span)
+        {
+            var scalarStart = Math.Max(_lineStart, _searchPosition);
+            Debug.Assert(sizeof(ulong) >= span.Length - scalarStart);
+            for (var i = scalarStart; i < span.Length; i++)
+            {
+                var c = span[i];
+                var lf = c == '\n' ? 1 : 0;
+                var cr = c == '\r' ? 1 : 0;
+                var m = lf | cr;
+                if (m != 0)
+                {
+                    _maskBasePosition = i;
+                    return 1;
+                }
+            }
+            return 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
