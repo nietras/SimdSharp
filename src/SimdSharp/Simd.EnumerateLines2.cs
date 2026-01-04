@@ -144,16 +144,23 @@ public static partial class Simd
             var cr = Vector512.Create((ushort)'\r');
 
             ulong mask = 0;
-            while (mask == 0 && _searchPosition <= span.Length - Vector512<ushort>.Count)
+            var searchPosition = _searchPosition;
+            var maskBasePosition = 0;
+            ref var spanRef = ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(span));
+            var end = span.Length - Vector512<ushort>.Count;
+            while (mask == 0 && searchPosition <= end)
             {
-                _maskBasePosition = _searchPosition;
-                var chunk = MemoryMarshal.Cast<char, Vector512<ushort>>(span.Slice(_searchPosition, Vector512<ushort>.Count))[0];
+                maskBasePosition = searchPosition;
+                ref var pos = ref Unsafe.Add(ref spanRef, searchPosition);
+                var chunk = Vector512.LoadUnsafe(ref pos);
                 var lfs = Vector512.Equals(chunk, lf);
                 var crs = Vector512.Equals(chunk, cr);
                 var matches = Vector512.BitwiseOr(lfs, crs);
                 mask = Vector512.ExtractMostSignificantBits(matches);
-                _searchPosition += Vector512<ushort>.Count;
+                searchPosition += Vector512<ushort>.Count;
             }
+            _searchPosition = searchPosition;
+            _maskBasePosition = maskBasePosition;
             return mask;
         }
 

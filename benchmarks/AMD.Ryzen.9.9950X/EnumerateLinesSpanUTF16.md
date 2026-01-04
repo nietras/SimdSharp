@@ -13,14 +13,14 @@ MaxIterationCount=7  MinIterationCount=3  WarmupCount=3
 ```
 | Method                       | TotalLength | MaxLineLength | Mean         | Ratio | Allocated | Alloc Ratio |
 |----------------------------- |------------ |-------------- |-------------:|------:|----------:|------------:|
-| EnumerateLines_BCL           | 32768       | 0             | 101,443.7 ns |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp     | 32768       | 0             |  14,685.3 ns |  0.14 |         - |          NA |
-| EnumerateLines_New_SimdSharp | 32768       | 0             |  11,954.5 ns |  0.12 |         - |          NA |
+| EnumerateLines_BCL           | 32768       | 0             | 102,238.5 ns |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp     | 32768       | 0             |  14,703.9 ns |  0.14 |         - |          NA |
+| EnumerateLines_New_SimdSharp | 32768       | 0             |  11,992.5 ns |  0.12 |         - |          NA |
 |                              |             |               |              |       |           |             |
-| EnumerateLines_BCL           | 32768       | 8             |  37,257.9 ns |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp     | 32768       | 8             |   6,995.2 ns |  0.19 |         - |          NA |
-| EnumerateLines_New_SimdSharp | 32768       | 8             |   5,384.8 ns |  0.14 |         - |          NA |
+| EnumerateLines_BCL           | 32768       | 8             |  37,625.1 ns |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp     | 32768       | 8             |   7,066.2 ns |  0.19 |         - |          NA |
+| EnumerateLines_New_SimdSharp | 32768       | 8             |   5,565.3 ns |  0.15 |         - |          NA |
 |                              |             |               |              |       |           |             |
-| EnumerateLines_BCL           | 32768       | 128           |   3,511.6 ns |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp     | 32768       | 128           |     904.5 ns |  0.26 |         - |          NA |
-| EnumerateLines_New_SimdSharp | 32768       | 128           |     851.6 ns |  0.24 |         - |          NA |
+| EnumerateLines_BCL           | 32768       | 128           |   3,535.9 ns |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp     | 32768       | 128           |     914.5 ns |  0.26 |         - |          NA |
+| EnumerateLines_New_SimdSharp | 32768       | 128           |     886.3 ns |  0.25 |         - |          NA |
