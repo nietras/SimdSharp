@@ -34,7 +34,7 @@ function Show-EnvVars {
     if ($isArm) {
         Write-Host "  DOTNET_EnableArm64AdvSimd   = $(Get-EnvValue $env:DOTNET_EnableArm64AdvSimd)" -ForegroundColor Gray
     } else {
-        Write-Host "  DOTNET_EnableAVX512F        = $(Get-EnvValue $env:DOTNET_EnableAVX512F)" -ForegroundColor Gray
+        Write-Host "  DOTNET_EnableAVX512        = $(Get-EnvValue $env:DOTNET_EnableAVX512)" -ForegroundColor Gray
         Write-Host "  DOTNET_EnableAVX2           = $(Get-EnvValue $env:DOTNET_EnableAVX2)" -ForegroundColor Gray
         Write-Host "  DOTNET_EnableAVX            = $(Get-EnvValue $env:DOTNET_EnableAVX)" -ForegroundColor Gray
         Write-Host "  DOTNET_EnableSSE2           = $(Get-EnvValue $env:DOTNET_EnableSSE2)" -ForegroundColor Gray
@@ -45,7 +45,7 @@ function Show-EnvVars {
 function Clear-SimdEnvVars {
     $env:DOTNET_EnableHWIntrinsic = $null
     # x64/x86
-    $env:DOTNET_EnableAVX512F = $null
+    $env:DOTNET_EnableAVX512 = $null
     $env:DOTNET_EnableAVX2 = $null
     $env:DOTNET_EnableAVX = $null
     $env:DOTNET_EnableSSE2 = $null
@@ -92,7 +92,7 @@ if ($isArm) {
     Write-Host "----------------------------------------" -ForegroundColor Yellow
 
     Clear-SimdEnvVars
-    $env:DOTNET_EnableAVX512F = "0"
+    $env:DOTNET_EnableAVX512 = "0"
 
     Show-EnvVars
     Run-SimdTest
@@ -105,7 +105,7 @@ if ($isArm) {
     Write-Host "----------------------------------------" -ForegroundColor Yellow
 
     Clear-SimdEnvVars
-    $env:DOTNET_EnableAVX512F = "0"
+    $env:DOTNET_EnableAVX512 = "0"
     $env:DOTNET_EnableAVX2 = "0"
     $env:DOTNET_EnableAVX = "0"
 
