@@ -49,6 +49,7 @@ public static partial class Simd
         /// True if the enumerator successfully advanced to the next line; false if
         /// the enumerator has advanced past the end of the span.
         /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool MoveNext()
         {
             if (!_isEnumeratorActive)
