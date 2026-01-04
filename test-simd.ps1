@@ -2,6 +2,10 @@
 # Script to run tests with different SIMD vector paths exercised
 # Supports both x86/x64 (SSE/AVX) and ARM64 (AdvSimd) platforms
 
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseApprovedVerbs', '')]
+param()
+
 $ErrorActionPreference = "Stop"
 
 Write-Output "========================================"
