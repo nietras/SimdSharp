@@ -34,7 +34,7 @@ function Show-EnvVars {
     if ($isArm) {
         Write-Host "  DOTNET_EnableArm64AdvSimd   = $(Get-EnvValue $env:DOTNET_EnableArm64AdvSimd)" -ForegroundColor Gray
     } else {
-        Write-Host "  DOTNET_EnableAVX512        = $(Get-EnvValue $env:DOTNET_EnableAVX512)" -ForegroundColor Gray
+        Write-Host "  DOTNET_EnableAVX512         = $(Get-EnvValue $env:DOTNET_EnableAVX512)" -ForegroundColor Gray
         Write-Host "  DOTNET_EnableAVX2           = $(Get-EnvValue $env:DOTNET_EnableAVX2)" -ForegroundColor Gray
         Write-Host "  DOTNET_EnableAVX            = $(Get-EnvValue $env:DOTNET_EnableAVX)" -ForegroundColor Gray
         Write-Host "  DOTNET_EnableSSE2           = $(Get-EnvValue $env:DOTNET_EnableSSE2)" -ForegroundColor Gray
