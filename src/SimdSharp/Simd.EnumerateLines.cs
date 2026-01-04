@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -109,22 +110,10 @@ public static partial class Simd
         ulong SearchNextMask(ReadOnlySpan<char> span)
         {
             ulong mask = 0;
-            if (Vector512.IsHardwareAccelerated)
-            {
-                mask = SearchMask512(span);
-            }
-            else if (Vector256.IsHardwareAccelerated)
-            {
-                mask = SearchMask256(span);
-            }
-            else if (Vector128.IsHardwareAccelerated)
-            {
-                mask = SearchMask128(span);
-            }
-            if (mask == 0)
-            {
-                mask = SearchMaskScalar(span);
-            }
+            if (Vector512.IsHardwareAccelerated) { mask = SearchMask512(span); }
+            else if (Vector256.IsHardwareAccelerated) { mask = SearchMask256(span); }
+            else if (Vector128.IsHardwareAccelerated) { mask = SearchMask128(span); }
+            if (mask == 0) { mask = SearchMaskScalar(span); }
             return mask;
         }
 
@@ -148,6 +137,7 @@ public static partial class Simd
             return 0;
         }
 
+        [ExcludeFromCodeCoverage]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         ulong SearchMask512(ReadOnlySpan<char> span)
         {
@@ -230,12 +220,15 @@ public static partial class Simd
         }
 
         /// <inheritdoc />
+        [ExcludeFromCodeCoverage]
         readonly object IEnumerator.Current => throw new NotSupportedException();
 
         /// <inheritdoc />
+        [ExcludeFromCodeCoverage]
         readonly void IEnumerator.Reset() => throw new NotSupportedException();
 
         /// <inheritdoc />
+        [ExcludeFromCodeCoverage]
         readonly void IDisposable.Dispose() { }
     }
 }
