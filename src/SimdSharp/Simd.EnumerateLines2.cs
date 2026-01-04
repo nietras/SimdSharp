@@ -1,0 +1,214 @@
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+
+namespace SimdSharp;
+
+public static partial class Simd
+{
+    public static MaskSpanLineEnumeratorUTF16New EnumerateLinesNew(ReadOnlySpan<char> span)
+        => new(span);
+
+    /// <summary>
+    /// Enumerates the lines of a <see cref="ReadOnlySpan{Char}"/>.
+    /// </summary>
+    /// <remarks>
+    /// To get an instance of this type, use <see cref="Simd.EnumerateLines(ReadOnlySpan{char})"/>.
+    /// </remarks>
+    public ref struct MaskSpanLineEnumeratorUTF16New : IEnumerator<ReadOnlySpan<char>>
+    {
+        readonly ReadOnlySpan<char> _span;
+        int _lineStart = 0;
+        int _searchPosition = 0;  // Next position to search from (advances after each vector is fully processed)
+        int _maskBasePosition = 0;  // Base position for current non-zero mask
+        ulong _mask = 0;
+        int _currentStart = 0;
+        int _currentLength = 0;
+        bool _isEnumeratorActive = true;
+
+        internal MaskSpanLineEnumeratorUTF16New(ReadOnlySpan<char> span) => _span = span;
+
+        /// <summary>
+        /// Gets the line at the current position of the enumerator.
+        /// </summary>
+        public readonly ReadOnlySpan<char> Current => _span.Slice(_currentStart, _currentLength);
+
+        /// <summary>
+        /// Returns this instance as an enumerator.
+        /// </summary>
+        public readonly MaskSpanLineEnumeratorUTF16New GetEnumerator() => this;
+
+        /// <summary>
+        /// Advances the enumerator to the next line of the span.
+        /// </summary>
+        /// <returns>
+        /// True if the enumerator successfully advanced to the next line; false if
+        /// the enumerator has advanced past the end of the span.
+        /// </returns>
+        public bool MoveNext()
+        {
+            if (!_isEnumeratorActive)
+            {
+                _currentStart = 0;
+                _currentLength = 0;
+                return false;
+            }
+
+            var span = _span;
+
+        MASK:
+            if (_mask != 0)
+            {
+                var bit = BitOperations.TrailingZeroCount(_mask);
+                _mask &= (_mask - 1);
+
+                var candidate = _maskBasePosition + bit;
+                if (candidate >= _lineStart)
+                {
+                    var stride = 1;
+                    if (span[candidate] == '\r' &&
+                        (uint)(candidate + 1) < (uint)span.Length &&
+                        span[candidate + 1] == '\n')
+                    {
+                        stride = 2;
+                        // Clear the \n bit from mask if it's the next bit
+                        if (bit + 1 < 64)
+                        {
+                            _mask &= ~(1UL << (bit + 1));
+                        }
+                    }
+                    _currentStart = _lineStart;
+                    _currentLength = candidate - _lineStart;
+                    _lineStart = candidate + stride;
+                    return true;
+                }
+                goto MASK;
+            }
+
+            // SIMD path: search for \r or \n using best available vector size
+            if (Vector512.IsHardwareAccelerated)
+            {
+                if (SearchAndUpdateMask512(span))
+                    goto MASK;
+            }
+            else if (Vector256.IsHardwareAccelerated)
+            {
+                if (SearchAndUpdateMask256(span))
+                    goto MASK;
+            }
+            else if (Vector128.IsHardwareAccelerated)
+            {
+                if (SearchAndUpdateMask128(span))
+                    goto MASK;
+            }
+
+            // Scalar fallback: search remaining characters not covered by SIMD
+            var scalarStart = Math.Max(_lineStart, _searchPosition);
+            var remaining = span.Slice(scalarStart);
+            var idx = remaining.IndexOfAny('\n', '\r');
+            if (idx >= 0)
+            {
+                var newlineIndex = scalarStart + idx;
+                var stride = 1;
+
+                if (span[newlineIndex] == '\r' &&
+                    (uint)(newlineIndex + 1) < (uint)span.Length &&
+                    span[newlineIndex + 1] == '\n')
+                {
+                    stride = 2;
+                }
+
+                _currentStart = _lineStart;
+                _currentLength = newlineIndex - _lineStart;
+                _lineStart = newlineIndex + stride;
+                _searchPosition = _lineStart;
+                return true;
+            }
+
+            // No more newlines found - return the final segment
+            _currentStart = _lineStart;
+            _currentLength = span.Length - _lineStart;
+            _isEnumeratorActive = false;
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        bool SearchAndUpdateMask512(ReadOnlySpan<char> span)
+        {
+            var lf = Vector512.Create((ushort)'\n');
+            var cr = Vector512.Create((ushort)'\r');
+
+            while (_searchPosition <= span.Length - Vector512<ushort>.Count)
+            {
+                _maskBasePosition = _searchPosition;
+                var chunk = MemoryMarshal.Cast<char, Vector512<ushort>>(span.Slice(_searchPosition, Vector512<ushort>.Count))[0];
+                var lfs = Vector512.Equals(chunk, lf);
+                var crs = Vector512.Equals(chunk, cr);
+                var matches = Vector512.BitwiseOr(lfs, crs);
+                _mask = Vector512.ExtractMostSignificantBits(matches);
+                _searchPosition += Vector512<ushort>.Count;
+
+                if (_mask != 0)
+                    return true;
+            }
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        bool SearchAndUpdateMask256(ReadOnlySpan<char> span)
+        {
+            var lf = Vector256.Create((ushort)'\n');
+            var cr = Vector256.Create((ushort)'\r');
+
+            while (_searchPosition <= span.Length - Vector256<ushort>.Count)
+            {
+                _maskBasePosition = _searchPosition;
+                var chunk = MemoryMarshal.Cast<char, Vector256<ushort>>(span.Slice(_searchPosition, Vector256<ushort>.Count))[0];
+                var lfs = Vector256.Equals(chunk, lf);
+                var crs = Vector256.Equals(chunk, cr);
+                var matches = Vector256.BitwiseOr(lfs, crs);
+                _mask = Vector256.ExtractMostSignificantBits(matches);
+                _searchPosition += Vector256<ushort>.Count;
+
+                if (_mask != 0)
+                    return true;
+            }
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        bool SearchAndUpdateMask128(ReadOnlySpan<char> span)
+        {
+            var lf = Vector128.Create((ushort)'\n');
+            var cr = Vector128.Create((ushort)'\r');
+
+            while (_searchPosition <= span.Length - Vector128<ushort>.Count)
+            {
+                _maskBasePosition = _searchPosition;
+                var chunk = MemoryMarshal.Cast<char, Vector128<ushort>>(span.Slice(_searchPosition, Vector128<ushort>.Count))[0];
+                var lfs = Vector128.Equals(chunk, lf);
+                var crs = Vector128.Equals(chunk, cr);
+                var matches = Vector128.BitwiseOr(lfs, crs);
+                _mask = Vector128.ExtractMostSignificantBits(matches);
+                _searchPosition += Vector128<ushort>.Count;
+
+                if (_mask != 0)
+                    return true;
+            }
+            return false;
+        }
+
+        /// <inheritdoc />
+        readonly object IEnumerator.Current => throw new NotSupportedException();
+
+        /// <inheritdoc />
+        readonly void IEnumerator.Reset() => throw new NotSupportedException();
+
+        /// <inheritdoc />
+        readonly void IDisposable.Dispose() { }
+    }
+}

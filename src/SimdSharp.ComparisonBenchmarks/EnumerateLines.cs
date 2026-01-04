@@ -62,6 +62,17 @@ public class EnumerateLinesSpanUTF16
         return sum;
     }
 
+    [Benchmark]
+    public nint EnumerateLines_New_SimdSharp()
+    {
+        nint sum = 0;
+        foreach (var line in Simd.EnumerateLinesNew(m_text))
+        {
+            sum += line.Length;
+        }
+        return sum;
+    }
+
     static string GenerateText(int totalLength = 1024 * 1024, int maxLineLength = 100)
     {
         var random = new Random(42);

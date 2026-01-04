@@ -23,7 +23,8 @@ public static partial class Simd
     {
         readonly ReadOnlySpan<char> _span;
         int _lineStart = 0;
-        int _simdPosition = 0;
+        int _searchPosition = 0;  // Next position to search from (advances after each vector is fully processed)
+        int _maskBasePosition = 0;  // Base position for current non-zero mask
         ulong _mask = 0;
         int _currentStart = 0;
         int _currentLength = 0;
@@ -78,7 +79,7 @@ public static partial class Simd
             // Scalar fallback: search remaining characters not covered by SIMD using IndexOfAny
             if (newlineIndex == -1)
             {
-                var scalarStart = Math.Max(start, _simdPosition);
+                var scalarStart = Math.Max(start, _searchPosition);
                 var remaining = span.Slice(scalarStart);
                 var idx = remaining.IndexOfAny('\n', '\r');
                 if (idx >= 0)
@@ -119,39 +120,42 @@ public static partial class Simd
             var lf = Vector512.Create((ushort)'\n');
             var cr = Vector512.Create((ushort)'\r');
 
+            var mask = _mask;
             while (true)
             {
                 // First, check if we have any bits left in the current mask
-                if (_mask != 0)
+                if (mask != 0)
                 {
-                    var bit = BitOperations.TrailingZeroCount(_mask);
-                    _mask &= (_mask - 1);
+                    var bit = BitOperations.TrailingZeroCount(mask);
+                    mask &= (mask - 1);
 
-                    // Calculate the absolute position in the span
-                    var candidate = (_simdPosition - Vector512<ushort>.Count) + bit;
+                    var candidate = _maskBasePosition + bit;
 
                     if (candidate >= start)
                     {
+                        _mask = mask;
                         return candidate;
                     }
                     continue;
                 }
 
                 // Try to load and process the next Vector512 chunk
-                if (_simdPosition <= span.Length - Vector512<ushort>.Count)
+                if (_searchPosition <= span.Length - Vector512<ushort>.Count)
                 {
-                    var chunk = MemoryMarshal.Cast<char, Vector512<ushort>>(span.Slice(_simdPosition, Vector512<ushort>.Count))[0];
+                    _maskBasePosition = _searchPosition;
+                    var chunk = MemoryMarshal.Cast<char, Vector512<ushort>>(span.Slice(_searchPosition, Vector512<ushort>.Count))[0];
                     var lfs = Vector512.Equals(chunk, lf);
                     var crs = Vector512.Equals(chunk, cr);
                     var matches = Vector512.BitwiseOr(lfs, crs);
-                    _mask = Vector512.ExtractMostSignificantBits(matches);
-                    _simdPosition += Vector512<ushort>.Count;
+                    mask = Vector512.ExtractMostSignificantBits(matches);
+                    _searchPosition += Vector512<ushort>.Count;
                     continue;
                 }
 
                 break;
             }
 
+            _mask = mask;
             return -1;
         }
 
@@ -169,8 +173,7 @@ public static partial class Simd
                     var bit = BitOperations.TrailingZeroCount(_mask);
                     _mask &= (_mask - 1);
 
-                    // Calculate the absolute position in the span
-                    var candidate = (_simdPosition - Vector256<ushort>.Count) + bit;
+                    var candidate = _maskBasePosition + bit;
 
                     if (candidate >= start)
                     {
@@ -180,14 +183,15 @@ public static partial class Simd
                 }
 
                 // Try to load and process the next Vector256 chunk
-                if (_simdPosition <= span.Length - Vector256<ushort>.Count)
+                if (_searchPosition <= span.Length - Vector256<ushort>.Count)
                 {
-                    var chunk = MemoryMarshal.Cast<char, Vector256<ushort>>(span.Slice(_simdPosition, Vector256<ushort>.Count))[0];
+                    _maskBasePosition = _searchPosition;
+                    var chunk = MemoryMarshal.Cast<char, Vector256<ushort>>(span.Slice(_searchPosition, Vector256<ushort>.Count))[0];
                     var lfs = Vector256.Equals(chunk, lf);
                     var crs = Vector256.Equals(chunk, cr);
                     var matches = Vector256.BitwiseOr(lfs, crs);
                     _mask = Vector256.ExtractMostSignificantBits(matches);
-                    _simdPosition += Vector256<ushort>.Count;
+                    _searchPosition += Vector256<ushort>.Count;
                     continue;
                 }
 
@@ -211,8 +215,7 @@ public static partial class Simd
                     var bit = BitOperations.TrailingZeroCount(_mask);
                     _mask &= (_mask - 1);
 
-                    // Calculate the absolute position in the span
-                    var candidate = (_simdPosition - Vector128<ushort>.Count) + bit;
+                    var candidate = _maskBasePosition + bit;
 
                     if (candidate >= start)
                     {
@@ -222,14 +225,15 @@ public static partial class Simd
                 }
 
                 // Try to load and process the next Vector128 chunk
-                if (_simdPosition <= span.Length - Vector128<ushort>.Count)
+                if (_searchPosition <= span.Length - Vector128<ushort>.Count)
                 {
-                    var chunk = MemoryMarshal.Cast<char, Vector128<ushort>>(span.Slice(_simdPosition, Vector128<ushort>.Count))[0];
+                    _maskBasePosition = _searchPosition;
+                    var chunk = MemoryMarshal.Cast<char, Vector128<ushort>>(span.Slice(_searchPosition, Vector128<ushort>.Count))[0];
                     var lfs = Vector128.Equals(chunk, lf);
                     var crs = Vector128.Equals(chunk, cr);
                     var matches = Vector128.BitwiseOr(lfs, crs);
                     _mask = Vector128.ExtractMostSignificantBits(matches);
-                    _simdPosition += Vector128<ushort>.Count;
+                    _searchPosition += Vector128<ushort>.Count;
                     continue;
                 }
 

@@ -43,14 +43,14 @@ Benchmarks.
 
 | Method                   | TotalLength | MaxLineLength | Mean         | Ratio | Allocated | Alloc Ratio |
 |------------------------- |------------ |-------------- |-------------:|------:|----------:|------------:|
-| EnumerateLines_BCL       | 32768       | 0             | 101,821.7 ns |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp | 32768       | 0             |  14,516.2 ns |  0.14 |         - |          NA |
+| EnumerateLines_BCL       | 32768       | 0             | 101,818.6 ns |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 32768       | 0             |  14,717.9 ns |  0.14 |         - |          NA |
 |                          |             |               |              |       |           |             |
-| EnumerateLines_BCL       | 32768       | 8             |  37,326.2 ns |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp | 32768       | 8             |   6,533.8 ns |  0.18 |         - |          NA |
+| EnumerateLines_BCL       | 32768       | 8             |  37,365.9 ns |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 32768       | 8             |   7,001.5 ns |  0.19 |         - |          NA |
 |                          |             |               |              |       |           |             |
-| EnumerateLines_BCL       | 32768       | 128           |   3,509.4 ns |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp | 32768       | 128           |     885.5 ns |  0.25 |         - |          NA |
+| EnumerateLines_BCL       | 32768       | 128           |   3,511.0 ns |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 32768       | 128           |     928.5 ns |  0.26 |         - |          NA |
 
 
 ## Example Catalogue
@@ -86,6 +86,7 @@ namespace SimdSharp
             public System.ReadOnlySpan<char> Current { get; }
             public SimdSharp.Simd.MaskSpanLineEnumeratorUTF16 GetEnumerator() { }
             public bool MoveNext() { }
+            public bool MoveNextNew() { }
         }
     }
 }
