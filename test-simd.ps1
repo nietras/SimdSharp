@@ -10,6 +10,7 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
 $testProject = "src/SimdSharp.Test/SimdSharp.Test.csproj"
+$testFilter = "FullyQualifiedName~VectorPaths"
 $failed = $false
 
 # Detect platform - compatible with PowerShell 5.1+
@@ -54,6 +55,12 @@ function Clear-SimdEnvVars {
     $env:DOTNET_EnableArm64AdvSimd = $null
 }
 
+function Run-SimdTest {
+    # Run only VectorPaths test with console logger to show output
+    dotnet test $testProject --no-build -c Release --filter $testFilter --logger "console;verbosity=detailed"
+    if ($LASTEXITCODE -ne 0) { $script:failed = $true }
+}
+
 # Test 1: Default (all SIMD enabled - uses highest available)
 Write-Host "----------------------------------------" -ForegroundColor Yellow
 Write-Host "Test Run 1: Default (All SIMD enabled)" -ForegroundColor Yellow
@@ -61,9 +68,7 @@ Write-Host "----------------------------------------" -ForegroundColor Yellow
 
 Clear-SimdEnvVars
 Show-EnvVars
-
-dotnet test $testProject --no-build -c Release
-if ($LASTEXITCODE -ne 0) { $failed = $true }
+Run-SimdTest
 
 Write-Host ""
 
@@ -75,13 +80,8 @@ if ($isArm) {
     Write-Host "----------------------------------------" -ForegroundColor Yellow
 
     Clear-SimdEnvVars
-    # On ARM64, Vector128.IsHardwareAccelerated is true with AdvSimd
-    # Vector256/512.IsHardwareAccelerated are false (software emulated)
-    # Default run already exercises Vector128 on ARM, so this is same as Test 1
     Show-EnvVars
-
-    dotnet test $testProject --no-build -c Release
-    if ($LASTEXITCODE -ne 0) { $failed = $true }
+    Run-SimdTest
 
     Write-Host ""
 } else {
@@ -96,9 +96,7 @@ if ($isArm) {
     $env:DOTNET_EnableAVX512F = "0"
 
     Show-EnvVars
-
-    dotnet test $testProject --no-build -c Release
-    if ($LASTEXITCODE -ne 0) { $failed = $true }
+    Run-SimdTest
 
     Write-Host ""
 
@@ -113,9 +111,7 @@ if ($isArm) {
     $env:DOTNET_EnableAVX = "0"
 
     Show-EnvVars
-
-    dotnet test $testProject --no-build -c Release
-    if ($LASTEXITCODE -ne 0) { $failed = $true }
+    Run-SimdTest
 
     Write-Host ""
 }
@@ -129,9 +125,7 @@ Clear-SimdEnvVars
 $env:DOTNET_EnableHWIntrinsic = "0"
 
 Show-EnvVars
-
-dotnet test $testProject --no-build -c Release
-if ($LASTEXITCODE -ne 0) { $failed = $true }
+Run-SimdTest
 
 Clear-SimdEnvVars
 Write-Host ""
