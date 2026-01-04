@@ -182,16 +182,23 @@ public static partial class Simd
             var cr = Vector256.Create((ushort)'\r');
 
             ulong mask = 0;
-            while (mask == 0 && _searchPosition <= span.Length - Vector256<ushort>.Count)
+            var searchPosition = _searchPosition;
+            var maskBasePosition = 0;
+            ref var spanRef = ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(span));
+            var end = span.Length - Vector256<ushort>.Count;
+            while (mask == 0 && searchPosition <= end)
             {
-                _maskBasePosition = _searchPosition;
-                var chunk = MemoryMarshal.Cast<char, Vector256<ushort>>(span.Slice(_searchPosition, Vector256<ushort>.Count))[0];
+                maskBasePosition = searchPosition;
+                ref var pos = ref Unsafe.Add(ref spanRef, searchPosition);
+                var chunk = Vector256.LoadUnsafe(ref pos);
                 var lfs = Vector256.Equals(chunk, lf);
                 var crs = Vector256.Equals(chunk, cr);
                 var matches = Vector256.BitwiseOr(lfs, crs);
                 mask = Vector256.ExtractMostSignificantBits(matches);
-                _searchPosition += Vector256<ushort>.Count;
+                searchPosition += Vector256<ushort>.Count;
             }
+            _searchPosition = searchPosition;
+            _maskBasePosition = maskBasePosition;
             return mask;
         }
 
@@ -202,16 +209,23 @@ public static partial class Simd
             var cr = Vector128.Create((ushort)'\r');
 
             ulong mask = 0;
-            while (mask == 0 && _searchPosition <= span.Length - Vector128<ushort>.Count)
+            var searchPosition = _searchPosition;
+            var maskBasePosition = 0;
+            ref var spanRef = ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(span));
+            var end = span.Length - Vector128<ushort>.Count;
+            while (mask == 0 && searchPosition <= end)
             {
-                _maskBasePosition = _searchPosition;
-                var chunk = MemoryMarshal.Cast<char, Vector128<ushort>>(span.Slice(_searchPosition, Vector128<ushort>.Count))[0];
+                maskBasePosition = searchPosition;
+                ref var pos = ref Unsafe.Add(ref spanRef, searchPosition);
+                var chunk = Vector128.LoadUnsafe(ref pos);
                 var lfs = Vector128.Equals(chunk, lf);
                 var crs = Vector128.Equals(chunk, cr);
                 var matches = Vector128.BitwiseOr(lfs, crs);
                 mask = Vector128.ExtractMostSignificantBits(matches);
-                _searchPosition += Vector128<ushort>.Count;
+                searchPosition += Vector128<ushort>.Count;
             }
+            _searchPosition = searchPosition;
+            _maskBasePosition = maskBasePosition;
             return mask;
         }
 
