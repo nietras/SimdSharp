@@ -132,7 +132,7 @@ public static partial class Simd
         ulong SearchMaskScalar(ReadOnlySpan<char> span)
         {
             var scalarStart = Math.Max(_lineStart, _searchPosition);
-            Debug.Assert(sizeof(ulong) >= span.Length - scalarStart);
+            Debug.Assert(sizeof(ulong) * 8 >= span.Length - scalarStart);
             for (var i = scalarStart; i < span.Length; i++)
             {
                 var c = span[i];
