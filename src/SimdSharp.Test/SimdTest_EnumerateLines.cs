@@ -26,7 +26,12 @@ public sealed class SimdTest_EnumerateLines
     [DynamicData(nameof(EnumerateLinesTestData))]
     public void SimdEnumerateLinesMatchesMemoryExtensions(string text)
     {
-        //SpanLineEnumerator
+        // NOTE: BCL defines more than '\n','\r' as line breaks per:
+        // https://github.com/dotnet/dotnet/blob/main/src/runtime/src/libraries/System.Private.CoreLib/src/System/String.Manipulation.cs#L20
+        //   public const string NewLineCharsExceptLineFeed = "\r\f\u0085\u2028\u2029";
+        //   public static readonly SearchValues<char> NewLineChars =
+        //     SearchValues.Create(NewLineCharsExceptLineFeed + "\n");
+        // Hence, comparison is a bit unfair.
         var expectedEnumerator = MemoryExtensions.EnumerateLines(text);
         var actualEnumerator = Simd.EnumerateLines(text);
 
