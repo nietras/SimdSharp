@@ -28,7 +28,7 @@ public sealed class SimdTest_EnumerateLines
     {
         //SpanLineEnumerator
         var expectedEnumerator = MemoryExtensions.EnumerateLines(text);
-        var actualEnumerator = Simd.EnumerateLines(text);
+        var actualEnumerator = Simd.EnumerateLinesNew(text);
 
         while (Assert.AreEqualReturn(expectedEnumerator.MoveNext(), actualEnumerator.MoveNext()))
         {

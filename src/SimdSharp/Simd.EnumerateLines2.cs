@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -51,15 +52,7 @@ public static partial class Simd
         /// </returns>
         public bool MoveNext()
         {
-            if (!_isEnumeratorActive)
-            {
-                _currentStart = 0;
-                _currentLength = 0;
-                return false;
-            }
-
             var span = _span;
-
         MASK:
             if (_mask != 0)
             {
@@ -67,139 +60,141 @@ public static partial class Simd
                 _mask &= (_mask - 1);
 
                 var candidate = _maskBasePosition + bit;
-                if (candidate >= _lineStart)
-                {
-                    var stride = 1;
-                    if (span[candidate] == '\r' &&
-                        (uint)(candidate + 1) < (uint)span.Length &&
-                        span[candidate + 1] == '\n')
-                    {
-                        stride = 2;
-                        // Clear the \n bit from mask if it's the next bit
-                        if (bit + 1 < 64)
-                        {
-                            _mask &= ~(1UL << (bit + 1));
-                        }
-                    }
-                    _currentStart = _lineStart;
-                    _currentLength = candidate - _lineStart;
-                    _lineStart = candidate + stride;
-                    return true;
-                }
-                goto MASK;
-            }
-
-            // SIMD path: search for \r or \n using best available vector size
-            if (Vector512.IsHardwareAccelerated)
-            {
-                if (SearchAndUpdateMask512(span))
-                    goto MASK;
-            }
-            else if (Vector256.IsHardwareAccelerated)
-            {
-                if (SearchAndUpdateMask256(span))
-                    goto MASK;
-            }
-            else if (Vector128.IsHardwareAccelerated)
-            {
-                if (SearchAndUpdateMask128(span))
-                    goto MASK;
-            }
-
-            // Scalar fallback: search remaining characters not covered by SIMD
-            var scalarStart = Math.Max(_lineStart, _searchPosition);
-            var remaining = span.Slice(scalarStart);
-            var idx = remaining.IndexOfAny('\n', '\r');
-            if (idx >= 0)
-            {
-                var newlineIndex = scalarStart + idx;
+                Debug.Assert(candidate >= _lineStart);
                 var stride = 1;
-
-                if (span[newlineIndex] == '\r' &&
-                    (uint)(newlineIndex + 1) < (uint)span.Length &&
-                    span[newlineIndex + 1] == '\n')
+                if (span[candidate] == '\r' &&
+                    (uint)(candidate + 1) < (uint)span.Length &&
+                    span[candidate + 1] == '\n')
                 {
                     stride = 2;
+                    // Clear the \n bit from mask if it's in the mask, which
+                    // it is if mask is still not zero, after bit clear.
+                    if (_mask != 0)
+                    {
+                        _mask &= (_mask - 1);
+                    }
+                    if (candidate + 1 == _searchPosition)
+                    {
+                        ++_searchPosition;
+                    }
                 }
-
                 _currentStart = _lineStart;
-                _currentLength = newlineIndex - _lineStart;
-                _lineStart = newlineIndex + stride;
-                _searchPosition = _lineStart;
+                _currentLength = candidate - _lineStart;
+                _lineStart = candidate + stride;
                 return true;
+            }
+
+            if (!_isEnumeratorActive)
+            {
+                _currentStart = 0;
+                _currentLength = 0;
+                return false;
+            }
+            Debug.Assert(_mask == 0);
+            _mask = SearchNextMask(span);
+            if (_mask != 0)
+            {
+                goto MASK;
             }
 
             // No more newlines found - return the final segment
             _currentStart = _lineStart;
             _currentLength = span.Length - _lineStart;
+            _mask = 0;
             _isEnumeratorActive = false;
             return true;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        bool SearchAndUpdateMask512(ReadOnlySpan<char> span)
+        ulong SearchNextMask(ReadOnlySpan<char> span)
+        {
+            ulong mask = 0;
+            // SIMD path: search for \r or \n using best available vector size
+            if (Vector512.IsHardwareAccelerated)
+            {
+                mask = SearchMask512(span);
+            }
+            else if (Vector256.IsHardwareAccelerated)
+            {
+                mask = SearchMask256(span);
+            }
+            else if (Vector128.IsHardwareAccelerated)
+            {
+                mask = SearchMask128(span);
+            }
+            if (mask == 0)
+            {
+                // Scalar fallback: search remaining characters not covered by SIMD
+                var scalarStart = Math.Max(_lineStart, _searchPosition);
+                var remaining = span.Slice(scalarStart);
+                var idx = remaining.IndexOfAny('\n', '\r');
+                if (idx >= 0)
+                {
+                    var newlineIndex = scalarStart + idx;
+                    _maskBasePosition = newlineIndex;
+                    mask = 1;
+                }
+            }
+            return mask;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        ulong SearchMask512(ReadOnlySpan<char> span)
         {
             var lf = Vector512.Create((ushort)'\n');
             var cr = Vector512.Create((ushort)'\r');
 
-            while (_searchPosition <= span.Length - Vector512<ushort>.Count)
+            ulong mask = 0;
+            while (mask == 0 && _searchPosition <= span.Length - Vector512<ushort>.Count)
             {
                 _maskBasePosition = _searchPosition;
                 var chunk = MemoryMarshal.Cast<char, Vector512<ushort>>(span.Slice(_searchPosition, Vector512<ushort>.Count))[0];
                 var lfs = Vector512.Equals(chunk, lf);
                 var crs = Vector512.Equals(chunk, cr);
                 var matches = Vector512.BitwiseOr(lfs, crs);
-                _mask = Vector512.ExtractMostSignificantBits(matches);
+                mask = Vector512.ExtractMostSignificantBits(matches);
                 _searchPosition += Vector512<ushort>.Count;
-
-                if (_mask != 0)
-                    return true;
             }
-            return false;
+            return mask;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        bool SearchAndUpdateMask256(ReadOnlySpan<char> span)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        ulong SearchMask256(ReadOnlySpan<char> span)
         {
             var lf = Vector256.Create((ushort)'\n');
             var cr = Vector256.Create((ushort)'\r');
 
-            while (_searchPosition <= span.Length - Vector256<ushort>.Count)
+            ulong mask = 0;
+            while (mask == 0 && _searchPosition <= span.Length - Vector256<ushort>.Count)
             {
                 _maskBasePosition = _searchPosition;
                 var chunk = MemoryMarshal.Cast<char, Vector256<ushort>>(span.Slice(_searchPosition, Vector256<ushort>.Count))[0];
                 var lfs = Vector256.Equals(chunk, lf);
                 var crs = Vector256.Equals(chunk, cr);
                 var matches = Vector256.BitwiseOr(lfs, crs);
-                _mask = Vector256.ExtractMostSignificantBits(matches);
+                mask = Vector256.ExtractMostSignificantBits(matches);
                 _searchPosition += Vector256<ushort>.Count;
-
-                if (_mask != 0)
-                    return true;
             }
-            return false;
+            return mask;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        bool SearchAndUpdateMask128(ReadOnlySpan<char> span)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        ulong SearchMask128(ReadOnlySpan<char> span)
         {
             var lf = Vector128.Create((ushort)'\n');
             var cr = Vector128.Create((ushort)'\r');
 
-            while (_searchPosition <= span.Length - Vector128<ushort>.Count)
+            ulong mask = 0;
+            while (mask == 0 && _searchPosition <= span.Length - Vector128<ushort>.Count)
             {
                 _maskBasePosition = _searchPosition;
                 var chunk = MemoryMarshal.Cast<char, Vector128<ushort>>(span.Slice(_searchPosition, Vector128<ushort>.Count))[0];
                 var lfs = Vector128.Equals(chunk, lf);
                 var crs = Vector128.Equals(chunk, cr);
                 var matches = Vector128.BitwiseOr(lfs, crs);
-                _mask = Vector128.ExtractMostSignificantBits(matches);
+                mask = Vector128.ExtractMostSignificantBits(matches);
                 _searchPosition += Vector128<ushort>.Count;
-
-                if (_mask != 0)
-                    return true;
             }
-            return false;
+            return mask;
         }
 
         /// <inheritdoc />
