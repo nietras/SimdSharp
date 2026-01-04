@@ -10,7 +10,7 @@ namespace SimdSharp.Test;
 public class SimdTest_VectorPaths
 {
     [TestMethod]
-    public void VectorPaths_PrintHardwareAcceleration()
+    public void SimdTest_VectorPaths_PrintHardwareAcceleration()
     {
         // Hardware intrinsics (actual CPU instruction sets - controlled by DOTNET_Enable* env vars)
         var avx512f = Avx512F.IsSupported;
@@ -24,19 +24,20 @@ public class SimdTest_VectorPaths
         var v256 = Vector256.IsHardwareAccelerated;
         var v128 = Vector128.IsHardwareAccelerated;
 
-        var message = $"""
-            === SIMD Hardware Intrinsics (CPU instruction sets) ===
-            Avx512F.IsSupported:             {avx512f}
-            Avx2.IsSupported:                {avx2}
-            Sse2.IsSupported:                {sse2}
-            AdvSimd.IsSupported:             {advSimd}
-            AdvSimd.Arm64.IsSupported:       {advSimd64}
-            Vector512.IsHardwareAccelerated: {v512}
-            Vector256.IsHardwareAccelerated: {v256}
-            Vector128.IsHardwareAccelerated: {v128}
-            ========================================================
+        var message =
+            $"""
+                === SIMD Hardware Intrinsics (CPU instruction sets) ===
+                Avx512F.IsSupported:             {avx512f}
+                Avx2.IsSupported:                {avx2}
+                Sse2.IsSupported:                {sse2}
+                AdvSimd.IsSupported:             {advSimd}
+                AdvSimd.Arm64.IsSupported:       {advSimd64}
+                Vector512.IsHardwareAccelerated: {v512}
+                Vector256.IsHardwareAccelerated: {v256}
+                Vector128.IsHardwareAccelerated: {v128}
+                ========================================================
             """;
 
-        Console.WriteLine(message);
+        Console.Write(message);
     }
 }
