@@ -9,8 +9,6 @@ Write-Host "Running SIMD Tests with All Paths" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
-$testProject = "src/SimdSharp.Test/SimdSharp.Test.csproj"
-$testFilter = "FullyQualifiedName~VectorPaths"
 $failed = $false
 
 # Detect platform - compatible with PowerShell 5.1+
@@ -56,10 +54,11 @@ function Clear-SimdEnvVars {
 }
 
 function Run-SimdTest {
-    # Run only VectorPaths test with console logger to show output
-    dotnet test $testProject --no-build -c Release --filter $testFilter --logger "console;verbosity=detailed"
+    dotnet test --no-build -c Release --logger "console;verbosity=detailed"
     if ($LASTEXITCODE -ne 0) { $script:failed = $true }
 }
+
+dotnet build -c Release
 
 # Test 1: Default (all SIMD enabled - uses highest available)
 Write-Host "----------------------------------------" -ForegroundColor Yellow
