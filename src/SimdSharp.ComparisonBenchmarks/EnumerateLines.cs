@@ -77,18 +77,16 @@ public class EnumerateLinesSpanUTF16
     {
         var random = new Random(42);
         var sb = new StringBuilder(capacity: totalLength);
-        var count = 0;
-        while (count < totalLength)
+        while (sb.Length < totalLength)
         {
             var lineLength = random.Next(1, maxLineLength + 1);
-            if (count + lineLength + 1 > totalLength)
+            if (sb.Length + lineLength + 1 > totalLength)
             {
-                lineLength = totalLength - count - 1;
+                lineLength = totalLength - sb.Length - 1;
                 if (lineLength <= 0) break;
             }
             sb.Append('a', lineLength);
             sb.Append('\n');
-            count += lineLength + 1;
         }
         return sb.ToString();
     }

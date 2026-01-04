@@ -50,6 +50,7 @@ public static partial class Simd
         /// True if the enumerator successfully advanced to the next line; false if
         /// the enumerator has advanced past the end of the span.
         /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool MoveNext()
         {
             var span = _span;
@@ -108,7 +109,6 @@ public static partial class Simd
         ulong SearchNextMask(ReadOnlySpan<char> span)
         {
             ulong mask = 0;
-            // SIMD path: search for \r or \n using best available vector size
             if (Vector512.IsHardwareAccelerated)
             {
                 mask = SearchMask512(span);
@@ -123,15 +123,19 @@ public static partial class Simd
             }
             if (mask == 0)
             {
-                // Scalar fallback: search remaining characters not covered by SIMD
                 var scalarStart = Math.Max(_lineStart, _searchPosition);
-                var remaining = span.Slice(scalarStart);
-                var idx = remaining.IndexOfAny('\n', '\r');
-                if (idx >= 0)
+                for (var i = scalarStart; i < span.Length; i++)
                 {
-                    var newlineIndex = scalarStart + idx;
-                    _maskBasePosition = newlineIndex;
-                    mask = 1;
+                    var c = span[i];
+                    var lf = c == '\n' ? 1 : 0;
+                    var cr = c == '\r' ? 1 : 0;
+                    var m = lf | cr;
+                    if (m != 0)
+                    {
+                        mask = 1UL;
+                        _maskBasePosition = i;
+                        break;
+                    }
                 }
             }
             return mask;
