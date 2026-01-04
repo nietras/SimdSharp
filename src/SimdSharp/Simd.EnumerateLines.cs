@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -52,196 +53,166 @@ public static partial class Simd
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool MoveNext()
         {
+            var span = _span;
+        MASK:
+            if (_mask != 0)
+            {
+                var bit = BitOperations.TrailingZeroCount(_mask);
+                _mask &= (_mask - 1);
+
+                var candidate = _maskBasePosition + bit;
+                Debug.Assert(candidate >= _lineStart);
+                var stride = 1;
+                if (span[candidate] == '\r' &&
+                    (uint)(candidate + 1) < (uint)span.Length &&
+                    span[candidate + 1] == '\n')
+                {
+                    stride = 2;
+                    // Clear the \n bit from mask if it's in the mask, which
+                    // it is if mask is still not zero, after bit clear.
+                    if (_mask != 0)
+                    {
+                        _mask &= (_mask - 1);
+                    }
+                    if (candidate + 1 == _searchPosition)
+                    {
+                        ++_searchPosition;
+                    }
+                }
+                _currentStart = _lineStart;
+                _currentLength = candidate - _lineStart;
+                _lineStart = candidate + stride;
+                return true;
+            }
+
             if (!_isEnumeratorActive)
             {
                 _currentStart = 0;
                 _currentLength = 0;
                 return false;
             }
-
-            var span = _span;
-            var start = _lineStart;
-            var newlineIndex = -1;
-
-            // SIMD path: search for \r or \n using best available vector size
-            if (Vector512.IsHardwareAccelerated)
+            Debug.Assert(_mask == 0);
+            _mask = SearchNextMask(span);
+            if (_mask != 0)
             {
-                newlineIndex = SearchWithVector512(span, start);
-            }
-            else if (Vector256.IsHardwareAccelerated)
-            {
-                newlineIndex = SearchWithVector256(span, start);
-            }
-            else if (Vector128.IsHardwareAccelerated)
-            {
-                newlineIndex = SearchWithVector128(span, start);
+                goto MASK;
             }
 
-            // Scalar fallback: search remaining characters not covered by SIMD using IndexOfAny
-            if (newlineIndex == -1)
-            {
-                var scalarStart = Math.Max(start, _searchPosition);
-                var remaining = span.Slice(scalarStart);
-                var idx = remaining.IndexOfAny('\n', '\r');
-                if (idx >= 0)
-                {
-                    newlineIndex = scalarStart + idx;
-                }
-            }
-
-            if (newlineIndex >= 0)
-            {
-                var stride = 1;
-
-                if (span[newlineIndex] == '\r' &&
-                    (uint)(newlineIndex + 1) < (uint)span.Length &&
-                    span[newlineIndex + 1] == '\n')
-                {
-                    stride = 2;
-                }
-
-                _currentStart = start;
-                _currentLength = newlineIndex - start;
-                _lineStart = newlineIndex + stride;
-            }
-            else
-            {
-                // No more newlines found - return the final segment
-                _currentStart = start;
-                _currentLength = span.Length - start;
-                _isEnumeratorActive = false;
-            }
-
+            // No more newlines found - return the final segment
+            _currentStart = _lineStart;
+            _currentLength = span.Length - _lineStart;
+            _mask = 0;
+            _isEnumeratorActive = false;
             return true;
         }
 
+        ulong SearchNextMask(ReadOnlySpan<char> span)
+        {
+            ulong mask = 0;
+            if (Vector512.IsHardwareAccelerated)
+            {
+                mask = SearchMask512(span);
+            }
+            else if (Vector256.IsHardwareAccelerated)
+            {
+                mask = SearchMask256(span);
+            }
+            else if (Vector128.IsHardwareAccelerated)
+            {
+                mask = SearchMask128(span);
+            }
+            if (mask == 0)
+            {
+                mask = SearchMaskScalar(span);
+            }
+            return mask;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        int SearchWithVector512(ReadOnlySpan<char> span, int start)
+        ulong SearchMaskScalar(ReadOnlySpan<char> span)
+        {
+            var scalarStart = Math.Max(_lineStart, _searchPosition);
+            Debug.Assert(sizeof(ulong) >= span.Length - scalarStart);
+            for (var i = scalarStart; i < span.Length; i++)
+            {
+                var c = span[i];
+                var lf = c == '\n' ? 1 : 0;
+                var cr = c == '\r' ? 1 : 0;
+                var m = lf | cr;
+                if (m != 0)
+                {
+                    _maskBasePosition = i;
+                    return 1;
+                }
+            }
+            return 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        ulong SearchMask512(ReadOnlySpan<char> span)
         {
             var lf = Vector512.Create((ushort)'\n');
             var cr = Vector512.Create((ushort)'\r');
 
-            var mask = _mask;
-            while (true)
+            ulong mask = 0;
+            var searchPosition = _searchPosition;
+            var maskBasePosition = 0;
+            ref var spanRef = ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(span));
+            var end = span.Length - Vector512<ushort>.Count;
+            while (mask == 0 && searchPosition <= end)
             {
-                // First, check if we have any bits left in the current mask
-                if (mask != 0)
-                {
-                    var bit = BitOperations.TrailingZeroCount(mask);
-                    mask &= (mask - 1);
-
-                    var candidate = _maskBasePosition + bit;
-
-                    if (candidate >= start)
-                    {
-                        _mask = mask;
-                        return candidate;
-                    }
-                    continue;
-                }
-
-                // Try to load and process the next Vector512 chunk
-                if (_searchPosition <= span.Length - Vector512<ushort>.Count)
-                {
-                    _maskBasePosition = _searchPosition;
-                    var chunk = MemoryMarshal.Cast<char, Vector512<ushort>>(span.Slice(_searchPosition, Vector512<ushort>.Count))[0];
-                    var lfs = Vector512.Equals(chunk, lf);
-                    var crs = Vector512.Equals(chunk, cr);
-                    var matches = Vector512.BitwiseOr(lfs, crs);
-                    mask = Vector512.ExtractMostSignificantBits(matches);
-                    _searchPosition += Vector512<ushort>.Count;
-                    continue;
-                }
-
-                break;
+                maskBasePosition = searchPosition;
+                ref var pos = ref Unsafe.Add(ref spanRef, searchPosition);
+                var chunk = Vector512.LoadUnsafe(ref pos);
+                var lfs = Vector512.Equals(chunk, lf);
+                var crs = Vector512.Equals(chunk, cr);
+                var matches = Vector512.BitwiseOr(lfs, crs);
+                mask = Vector512.ExtractMostSignificantBits(matches);
+                searchPosition += Vector512<ushort>.Count;
             }
-
-            _mask = mask;
-            return -1;
+            _searchPosition = searchPosition;
+            _maskBasePosition = maskBasePosition;
+            return mask;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        int SearchWithVector256(ReadOnlySpan<char> span, int start)
+        ulong SearchMask256(ReadOnlySpan<char> span)
         {
             var lf = Vector256.Create((ushort)'\n');
             var cr = Vector256.Create((ushort)'\r');
 
-            while (true)
+            ulong mask = 0;
+            while (mask == 0 && _searchPosition <= span.Length - Vector256<ushort>.Count)
             {
-                // First, check if we have any bits left in the current mask
-                if (_mask != 0)
-                {
-                    var bit = BitOperations.TrailingZeroCount(_mask);
-                    _mask &= (_mask - 1);
-
-                    var candidate = _maskBasePosition + bit;
-
-                    if (candidate >= start)
-                    {
-                        return candidate;
-                    }
-                    continue;
-                }
-
-                // Try to load and process the next Vector256 chunk
-                if (_searchPosition <= span.Length - Vector256<ushort>.Count)
-                {
-                    _maskBasePosition = _searchPosition;
-                    var chunk = MemoryMarshal.Cast<char, Vector256<ushort>>(span.Slice(_searchPosition, Vector256<ushort>.Count))[0];
-                    var lfs = Vector256.Equals(chunk, lf);
-                    var crs = Vector256.Equals(chunk, cr);
-                    var matches = Vector256.BitwiseOr(lfs, crs);
-                    _mask = Vector256.ExtractMostSignificantBits(matches);
-                    _searchPosition += Vector256<ushort>.Count;
-                    continue;
-                }
-
-                break;
+                _maskBasePosition = _searchPosition;
+                var chunk = MemoryMarshal.Cast<char, Vector256<ushort>>(span.Slice(_searchPosition, Vector256<ushort>.Count))[0];
+                var lfs = Vector256.Equals(chunk, lf);
+                var crs = Vector256.Equals(chunk, cr);
+                var matches = Vector256.BitwiseOr(lfs, crs);
+                mask = Vector256.ExtractMostSignificantBits(matches);
+                _searchPosition += Vector256<ushort>.Count;
             }
-
-            return -1;
+            return mask;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        int SearchWithVector128(ReadOnlySpan<char> span, int start)
+        ulong SearchMask128(ReadOnlySpan<char> span)
         {
             var lf = Vector128.Create((ushort)'\n');
             var cr = Vector128.Create((ushort)'\r');
 
-            while (true)
+            ulong mask = 0;
+            while (mask == 0 && _searchPosition <= span.Length - Vector128<ushort>.Count)
             {
-                // First, check if we have any bits left in the current mask
-                if (_mask != 0)
-                {
-                    var bit = BitOperations.TrailingZeroCount(_mask);
-                    _mask &= (_mask - 1);
-
-                    var candidate = _maskBasePosition + bit;
-
-                    if (candidate >= start)
-                    {
-                        return candidate;
-                    }
-                    continue;
-                }
-
-                // Try to load and process the next Vector128 chunk
-                if (_searchPosition <= span.Length - Vector128<ushort>.Count)
-                {
-                    _maskBasePosition = _searchPosition;
-                    var chunk = MemoryMarshal.Cast<char, Vector128<ushort>>(span.Slice(_searchPosition, Vector128<ushort>.Count))[0];
-                    var lfs = Vector128.Equals(chunk, lf);
-                    var crs = Vector128.Equals(chunk, cr);
-                    var matches = Vector128.BitwiseOr(lfs, crs);
-                    _mask = Vector128.ExtractMostSignificantBits(matches);
-                    _searchPosition += Vector128<ushort>.Count;
-                    continue;
-                }
-
-                break;
+                _maskBasePosition = _searchPosition;
+                var chunk = MemoryMarshal.Cast<char, Vector128<ushort>>(span.Slice(_searchPosition, Vector128<ushort>.Count))[0];
+                var lfs = Vector128.Equals(chunk, lf);
+                var crs = Vector128.Equals(chunk, cr);
+                var matches = Vector128.BitwiseOr(lfs, crs);
+                mask = Vector128.ExtractMostSignificantBits(matches);
+                _searchPosition += Vector128<ushort>.Count;
             }
-
-            return -1;
+            return mask;
         }
 
         /// <inheritdoc />

@@ -41,19 +41,16 @@ Benchmarks.
 
 ###### AMD.Ryzen.9.9950X - EnumerateLinesSpanUTF16 Benchmark Results (SimdSharp 0.0.2.0, System 10.0.125.57005)
 
-| Method                       | TotalLength | MaxLineLength | Mean         | Ratio | Allocated | Alloc Ratio |
-|----------------------------- |------------ |-------------- |-------------:|------:|----------:|------------:|
-| EnumerateLines_BCL           | 32768       | 0             | 101,839.3 ns |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp     | 32768       | 0             |  14,729.8 ns |  0.14 |       1 B |          NA |
-| EnumerateLines_New_SimdSharp | 32768       | 0             |  11,893.9 ns |  0.12 |         - |          NA |
-|                              |             |               |              |       |           |             |
-| EnumerateLines_BCL           | 32768       | 8             |  37,240.6 ns |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp     | 32768       | 8             |   7,010.8 ns |  0.19 |         - |          NA |
-| EnumerateLines_New_SimdSharp | 32768       | 8             |   5,311.7 ns |  0.14 |         - |          NA |
-|                              |             |               |              |       |           |             |
-| EnumerateLines_BCL           | 32768       | 128           |   3,498.6 ns |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp     | 32768       | 128           |     910.4 ns |  0.26 |         - |          NA |
-| EnumerateLines_New_SimdSharp | 32768       | 128           |     894.3 ns |  0.26 |         - |          NA |
+| Method                   | TotalLength | MaxLineLength | Mean         | Ratio | Allocated | Alloc Ratio |
+|------------------------- |------------ |-------------- |-------------:|------:|----------:|------------:|
+| EnumerateLines_BCL       | 32768       | 0             | 101,440.7 ns |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 32768       | 0             |  11,627.4 ns |  0.11 |         - |          NA |
+|                          |             |               |              |       |           |             |
+| EnumerateLines_BCL       | 32768       | 8             |  37,377.7 ns |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 32768       | 8             |   4,896.1 ns |  0.13 |         - |          NA |
+|                          |             |               |              |       |           |             |
+| EnumerateLines_BCL       | 32768       | 128           |   3,498.0 ns |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 32768       | 128           |     776.4 ns |  0.22 |         - |          NA |
 
 
 ## Example Catalogue
@@ -84,17 +81,10 @@ namespace SimdSharp
     public static class Simd
     {
         public static SimdSharp.Simd.MaskSpanLineEnumeratorUTF16 EnumerateLines(System.ReadOnlySpan<char> span) { }
-        public static SimdSharp.Simd.MaskSpanLineEnumeratorUTF16New EnumerateLinesNew(System.ReadOnlySpan<char> span) { }
         public ref struct MaskSpanLineEnumeratorUTF16 : System.Collections.Generic.IEnumerator<System.ReadOnlySpan<char>>, System.Collections.IEnumerator, System.IDisposable
         {
             public System.ReadOnlySpan<char> Current { get; }
             public SimdSharp.Simd.MaskSpanLineEnumeratorUTF16 GetEnumerator() { }
-            public bool MoveNext() { }
-        }
-        public ref struct MaskSpanLineEnumeratorUTF16New : System.Collections.Generic.IEnumerator<System.ReadOnlySpan<char>>, System.Collections.IEnumerator, System.IDisposable
-        {
-            public System.ReadOnlySpan<char> Current { get; }
-            public SimdSharp.Simd.MaskSpanLineEnumeratorUTF16New GetEnumerator() { }
             public bool MoveNext() { }
         }
     }

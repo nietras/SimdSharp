@@ -93,17 +93,17 @@ else
     b.MaxLineLength = 128;
     b.GlobalSetup();
     log($"Length    {b.TotalLength}");
-    b.EnumerateLines_New_SimdSharp();
+    b.EnumerateLines_SimdSharp();
 #if !DEBUG
     for (var i = 0; i < 100; ++i)
     {
-        b.EnumerateLines_New_SimdSharp();
+        b.EnumerateLines_SimdSharp();
     }
     Thread.Sleep(500);
 #endif
     var sw = new Stopwatch();
     sw.Restart();
-    //var result = b.EnumerateLines_New_SimdSharp();
+    //var result = b.EnumerateLines_SimdSharp();
     //var resultBCL = b.EnumerateLines_BCL();
     //if (result != resultBCL)
     //{
@@ -111,14 +111,14 @@ else
     //}
     for (var i = 0; i < 100; ++i)
     {
-        b.EnumerateLines_New_SimdSharp();
+        b.EnumerateLines_SimdSharp();
     }
     var sep_ms = sw.ElapsedMilliseconds;
     log($"SimdSharp    {sep_ms:D4}");
     Thread.Sleep(300);
     for (var i = 0; i < 1000; i++)
     {
-        b.EnumerateLines_New_SimdSharp();
+        b.EnumerateLines_SimdSharp();
     }
 }
 
