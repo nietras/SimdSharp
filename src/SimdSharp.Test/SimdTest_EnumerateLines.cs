@@ -29,7 +29,7 @@ public sealed class SimdTest_EnumerateLines
 
     [TestMethod]
     [DynamicData(nameof(EnumerateLinesTestData))]
-    public void SimdTest_EnumerateLines_(TestCase testCase)
+    public void SimdTest_EnumerateLines_Enumerator(TestCase testCase)
     {
         var text = testCase.Text;
 
@@ -49,6 +49,23 @@ public sealed class SimdTest_EnumerateLines
             Assert.AreEqual(expected.Length, actual.Length);
             Assert.AreSame(expected, actual);
         }
+    }
+
+    [TestMethod]
+    [DynamicData(nameof(EnumerateLinesTestData))]
+    public void SimdTest_EnumerateLines_ForEach(TestCase testCase)
+    {
+        var text = testCase.Text;
+
+        var expectedLines = new List<string>();
+        foreach (var span in MemoryExtensions.EnumerateLines(text))
+        { expectedLines.Add(span.ToString()); }
+
+        var actualLines = new List<string>();
+        foreach (var span in Simd.EnumerateLines(text))
+        { actualLines.Add(span.ToString()); }
+
+        CollectionAssert.AreEqual(expectedLines, actualLines);
     }
 
     static string GenerateRandomText(int seed, int totalLength, int maxLineLength)
