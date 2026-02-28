@@ -37,14 +37,20 @@ Benchmarks.
 
 #### Comparison Benchmarks
 
-##### Test Benchmark Results
-Test.
+##### EnumerateLinesSpanUTF16 Benchmark Results
 
-###### AMD.Ryzen.9.9950X - Test Benchmark Results (SimdSharp 0.0.0.0, System  10.0.125.57005)
+###### AMD.Ryzen.9.9950X - EnumerateLinesSpanUTF16 Benchmark Results (SimdSharp 0.0.2.0, System 10.0.125.57005)
 
-| Method          | Scope | Count | Mean   | Ratio | Allocated | Alloc Ratio |
-|---------------- |------ |------ |-------:|------:|----------:|------------:|
-| SimdSharp______ | Test  | 25000 | 0.0 ns |     ? |         - |           ? |
+| Method                   | TotalLength | MaxLineLength | Mean         | Ratio | Allocated | Alloc Ratio |
+|------------------------- |------------ |-------------- |-------------:|------:|----------:|------------:|
+| EnumerateLines_BCL       | 32768       | 0             | 101,475.6 ns |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 32768       | 0             |  11,660.0 ns |  0.11 |         - |          NA |
+|                          |             |               |              |       |           |             |
+| EnumerateLines_BCL       | 32768       | 8             |  37,298.3 ns |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 32768       | 8             |   4,914.5 ns |  0.13 |         - |          NA |
+|                          |             |               |              |       |           |             |
+| EnumerateLines_BCL       | 32768       | 128           |   3,509.0 ns |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 32768       | 128           |     777.4 ns |  0.22 |         - |          NA |
 
 
 ## Example Catalogue
@@ -72,6 +78,15 @@ Simd.Empty();
 [assembly: System.Runtime.Versioning.TargetFramework(".NETCoreApp,Version=v10.0", FrameworkDisplayName=".NET 10.0")]
 namespace SimdSharp
 {
-    public static class Simd { }
+    public static class Simd
+    {
+        public static SimdSharp.Simd.MaskSpanLineEnumeratorUTF16 EnumerateLines(System.ReadOnlySpan<char> span) { }
+        public ref struct MaskSpanLineEnumeratorUTF16 : System.Collections.Generic.IEnumerator<System.ReadOnlySpan<char>>, System.Collections.IEnumerator, System.IDisposable
+        {
+            public System.ReadOnlySpan<char> Current { get; }
+            public SimdSharp.Simd.MaskSpanLineEnumeratorUTF16 GetEnumerator() { }
+            public bool MoveNext() { }
+        }
+    }
 }
 ```

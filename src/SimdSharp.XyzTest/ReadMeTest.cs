@@ -40,7 +40,7 @@ public partial class ReadMeTest
 
         var benchmarkFileNameToConfig = new Dictionary<string, (string Description, string ReadmeBefore, string ReadmeEnd, string SectionPrefix)>()
         {
-            { "TestBench.md", new("Test Benchmark Results", "##### Test Benchmark Results", "## Example Catalogue", "###### ") },
+            { "EnumerateLinesSpanUTF16.md", new("EnumerateLinesSpanUTF16 Benchmark Results", "##### EnumerateLinesSpanUTF16 Benchmark Results", "## Example Catalogue", "###### ") },
         };
 
         var benchmarksDirectory = Path.Combine(s_rootDirectory, "benchmarks");

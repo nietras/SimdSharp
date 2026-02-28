@@ -10,7 +10,7 @@
     <Copyright>Copyright © nietras A/S 2025</Copyright>
     <NeutralLanguage>en</NeutralLanguage>
 
-    <TargetFrameworks>net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
 
     <LangVersion>14.0</LangVersion>

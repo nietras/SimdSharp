@@ -26,6 +26,7 @@
     <File Path="README.md" />
     <File Path="rename.ps1" />
     <File Path="SECURITY.md" />
+    <File Path="test-simd.ps1" />
     <File Path="test-x64-x86.ps1" />
     <File Path="validate-codecov.ps1" />
   </Folder>
@@ -33,10 +34,10 @@
     <File Path="src/Directory.Build.props" />
     <File Path="src/Directory.Build.targets" />
   </Folder>
-  <Project Path="src/SimdSharp/SimdSharp.csproj" />
   <Project Path="src/SimdSharp.Benchmarks/SimdSharp.Benchmarks.csproj" />
   <Project Path="src/SimdSharp.ComparisonBenchmarks/SimdSharp.ComparisonBenchmarks.csproj" />
   <Project Path="src/SimdSharp.Test/SimdSharp.Test.csproj" />
   <Project Path="src/SimdSharp.Tester/SimdSharp.Tester.csproj" />
   <Project Path="src/SimdSharp.XyzTest/SimdSharp.XyzTest.csproj" />
+  <Project Path="src/SimdSharp/SimdSharp.csproj" />
 </Solution>
