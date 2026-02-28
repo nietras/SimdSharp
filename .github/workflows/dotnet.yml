@@ -45,7 +45,7 @@ jobs:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Setup .NET (global.json)
-        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
+        uses: actions/setup-dotnet@baa11fbfe1d6520db94683bd5c7a3818018e4309 # v5.1.0
         with:
           global-json-file: global.json
 
@@ -115,7 +115,7 @@ jobs:
 
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: Setup .NET
-        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
+        uses: actions/setup-dotnet@baa11fbfe1d6520db94683bd5c7a3818018e4309 # v5.1.0
         with:
           global-json-file: global.json
       - name: Format verify no changes
@@ -137,14 +137,14 @@ jobs:
         run: |
           git tag v${{ github.event.inputs.version }}
       - name: Setup .NET (global.json)
-        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
+        uses: actions/setup-dotnet@baa11fbfe1d6520db94683bd5c7a3818018e4309 # v5.1.0
         with:
           global-json-file: global.json
       - name: Pack nuget package
         run: dotnet pack -c Release --output ${{ env.NuGetDirectory }}
       - name: Get version of dll
         run: (Get-Item ./artifacts/bin/SimdSharp/release/SimdSharp.dll).VersionInfo.ProductVersion
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: nuget
           if-no-files-found: error
@@ -203,7 +203,7 @@ jobs:
           asset_name: SimdSharp.${{ github.event.inputs.version }}.snupkg
           asset_content_type: application/zip
       - name: Setup .NET
-        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
+        uses: actions/setup-dotnet@baa11fbfe1d6520db94683bd5c7a3818018e4309 # v5.1.0
         with:
           global-json-file: global.json
 
