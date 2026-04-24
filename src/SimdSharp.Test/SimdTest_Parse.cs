@@ -102,7 +102,7 @@ public class SimdTest_Parse
 
     static string CreateName(int signBit, int exponent, int mantissa)
     {
-        var sign = signBit == 0 ? "Positive" : "Negative";
+        var sign = signBit == 0 ? "+" : "-";
         var kind = exponent switch
         {
             0 when mantissa == 0 => "Zero",
@@ -112,7 +112,7 @@ public class SimdTest_Parse
             _ => "Normal"
         };
 
-        return $"{sign}_{kind}_E{exponent:X2}_M{mantissa:X6}";
+        return $"{kind}_s{sign}_e{exponent:X2}_m{mantissa:X6}";
     }
 
     static void AssertEqualsOrNaN(float expected, float actual)
