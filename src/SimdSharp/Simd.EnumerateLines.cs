@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace SimdSharp;
 
@@ -55,37 +56,35 @@ public static partial class Simd
         public bool MoveNext()
         {
             var span = _span;
+            if (_mask == 0) { goto AFTERMASK; }
         MASK:
-            if (_mask != 0)
+            var bit = BitOperations.TrailingZeroCount(_mask);
+            _mask &= (_mask - 1);
+
+            var candidate = _maskBasePosition + bit;
+            Debug.Assert(candidate >= _lineStart);
+            var stride = 1;
+            if (span[candidate] == '\r' &&
+                (uint)(candidate + 1) < (uint)span.Length &&
+                span[candidate + 1] == '\n')
             {
-                var bit = BitOperations.TrailingZeroCount(_mask);
-                _mask &= (_mask - 1);
-
-                var candidate = _maskBasePosition + bit;
-                Debug.Assert(candidate >= _lineStart);
-                var stride = 1;
-                if (span[candidate] == '\r' &&
-                    (uint)(candidate + 1) < (uint)span.Length &&
-                    span[candidate + 1] == '\n')
+                stride = 2;
+                // Clear the \n bit from mask if it's in the mask, which
+                // it is if mask is still not zero, after bit clear.
+                if (_mask != 0)
                 {
-                    stride = 2;
-                    // Clear the \n bit from mask if it's in the mask, which
-                    // it is if mask is still not zero, after bit clear.
-                    if (_mask != 0)
-                    {
-                        _mask &= (_mask - 1);
-                    }
-                    if (candidate + 1 == _searchPosition)
-                    {
-                        ++_searchPosition;
-                    }
+                    _mask &= (_mask - 1);
                 }
-                _currentStart = _lineStart;
-                _currentLength = candidate - _lineStart;
-                _lineStart = candidate + stride;
-                return true;
+                if (candidate + 1 == _searchPosition)
+                {
+                    ++_searchPosition;
+                }
             }
-
+            _currentStart = _lineStart;
+            _currentLength = candidate - _lineStart;
+            _lineStart = candidate + stride;
+            return true;
+        AFTERMASK:
             if (!_isEnumeratorActive)
             {
                 _currentStart = 0;
@@ -94,10 +93,7 @@ public static partial class Simd
             }
             Debug.Assert(_mask == 0);
             _mask = SearchNextMask(span);
-            if (_mask != 0)
-            {
-                goto MASK;
-            }
+            if (_mask != 0) { goto MASK; }
 
             // No more newlines found - return the final segment
             _currentStart = _lineStart;
@@ -113,7 +109,8 @@ public static partial class Simd
             if (Vector512.IsHardwareAccelerated) { mask = SearchMask512(span); }
             else if (Vector256.IsHardwareAccelerated) { mask = SearchMask256(span); }
             else if (Vector128.IsHardwareAccelerated) { mask = SearchMask128(span); }
-            if (mask == 0) { mask = SearchMaskScalar(span); }
+            // If Avx512BW then masked load supported and scalar not needed
+            if (!Avx512BW.IsSupported && mask == 0) { mask = SearchMaskScalar(span); }
             return mask;
         }
 
@@ -139,7 +136,7 @@ public static partial class Simd
 
         [ExcludeFromCodeCoverage]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        ulong SearchMask512(ReadOnlySpan<char> span)
+        unsafe ulong SearchMask512(ReadOnlySpan<char> span)
         {
             var lf = Vector512.Create((ushort)'\n');
             var cr = Vector512.Create((ushort)'\r');
@@ -148,7 +145,8 @@ public static partial class Simd
             var searchPosition = _searchPosition;
             var maskBasePosition = 0;
             ref var spanRef = ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(span));
-            var end = span.Length - Vector512<ushort>.Count;
+            var length = span.Length;
+            var end = length - Vector512<ushort>.Count;
             while (mask == 0 && searchPosition <= end)
             {
                 maskBasePosition = searchPosition;
@@ -159,6 +157,26 @@ public static partial class Simd
                 var matches = Vector512.BitwiseOr(lfs, crs);
                 mask = Vector512.ExtractMostSignificantBits(matches);
                 searchPosition += Vector512<ushort>.Count;
+            }
+            if (Avx512BW.IsSupported && mask == 0)
+            {
+                var remaining = length - searchPosition;
+                if (remaining > 0)
+                {
+                    maskBasePosition = searchPosition;
+                    ref var pos = ref Unsafe.Add(ref spanRef, searchPosition);
+                    fixed (ushort* posPtr = &pos)
+                    {
+                        var loadMask = Vector512.LessThan(Vector512<ushort>.Indices,
+                            Vector512.Create((ushort)remaining));
+                        var chunk = Avx512BW.MaskLoad(posPtr, loadMask, Vector512<ushort>.Zero);
+                        var lfs = Vector512.Equals(chunk, lf);
+                        var crs = Vector512.Equals(chunk, cr);
+                        var matches = Vector512.BitwiseOr(lfs, crs);
+                        mask = Vector512.ExtractMostSignificantBits(matches);
+                    }
+                    searchPosition = length;
+                }
             }
             _searchPosition = searchPosition;
             _maskBasePosition = maskBasePosition;
