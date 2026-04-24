@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace SimdSharp;
 
@@ -139,7 +140,7 @@ public static partial class Simd
 
         [ExcludeFromCodeCoverage]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        ulong SearchMask512(ReadOnlySpan<char> span)
+        unsafe ulong SearchMask512(ReadOnlySpan<char> span)
         {
             var lf = Vector512.Create((ushort)'\n');
             var cr = Vector512.Create((ushort)'\r');
@@ -159,6 +160,25 @@ public static partial class Simd
                 var matches = Vector512.BitwiseOr(lfs, crs);
                 mask = Vector512.ExtractMostSignificantBits(matches);
                 searchPosition += Vector512<ushort>.Count;
+            }
+            if (Avx512BW.IsSupported && mask == 0)
+            {
+                var remaining = span.Length - searchPosition;
+                if (remaining > 0)
+                {
+                    maskBasePosition = searchPosition;
+                    ref var pos = ref Unsafe.Add(ref spanRef, searchPosition);
+                    fixed (ushort* posPtr = &pos)
+                    {
+                        var loadMask = Vector512.LessThan(Vector512<ushort>.Indices, Vector512.Create((ushort)remaining));
+                        var chunk = Avx512BW.MaskLoad(posPtr, loadMask, Vector512<ushort>.Zero);
+                        var lfs = Vector512.Equals(chunk, lf);
+                        var crs = Vector512.Equals(chunk, cr);
+                        var matches = Vector512.BitwiseOr(lfs, crs);
+                        mask = Vector512.ExtractMostSignificantBits(matches);
+                    }
+                    searchPosition += remaining;
+                }
             }
             _searchPosition = searchPosition;
             _maskBasePosition = maskBasePosition;
