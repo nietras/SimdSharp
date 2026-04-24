@@ -8,11 +8,15 @@ namespace SimdSharp.Test;
 [TestClass]
 public class SimdTest_Parse
 {
-    const int ExponentShift = 23;
-    const int ExponentCount = 256;
-    const int MantissaMask = 0x007F_FFFF;
-    const int MantissaMidpoint = 0x0040_0000;
-    const int NegativeSignBit = unchecked((int)0x8000_0000);
+    const int SignBitCount = 1;
+    const int ExponentBitCount = 8;
+    const int MantissaBitCount = 23;
+    const int ExponentShift = MantissaBitCount;
+    const int ExponentCount = 1 << ExponentBitCount;
+    const int ExponentMask = ExponentCount - 1;
+    const int MantissaMask = (1 << MantissaBitCount) - 1;
+    const int MantissaMidpoint = 1 << (MantissaBitCount - 1);
+    const int NegativeSignBit = unchecked((int)(1u << (MantissaBitCount + ExponentBitCount)));
 
     static ReadOnlySpan<int> SignBits => [0, NegativeSignBit];
 
@@ -124,7 +128,7 @@ public class SimdTest_Parse
     }
 
     static bool IsNaN(int bits)
-        => ((bits >> ExponentShift) & 0xFF) == ExponentCount - 1 && (bits & MantissaMask) != 0;
+        => ((bits >> ExponentShift) & ExponentMask) == ExponentCount - 1 && (bits & MantissaMask) != 0;
 
     static int SingleToBits(float value) => BitConverter.SingleToInt32Bits(value);
 
