@@ -8,19 +8,32 @@ namespace SimdSharp.Test;
 [TestClass]
 public class SimdTest_Parse
 {
-
     const int ExponentShift = 23;
     const int ExponentCount = 256;
     const int MantissaMask = 0x007F_FFFF;
     const int MantissaMidpoint = 0x0040_0000;
     const int NegativeSignBit = unchecked((int)0x8000_0000);
 
-    public readonly record struct Float32TestCase(string Name, int Bits)
-    {
-        public float Value => BitConverter.Int32BitsToSingle(Bits);
+    static ReadOnlySpan<int> SignBits => [0, NegativeSignBit];
 
-        public override string ToString() => Name;
-    }
+    static string?[] Formats { get; } = [null, "G9", "R", "E9"];
+
+    static CultureInfo?[] CultureInfos { get; } = [null, new(""), new("en-US")];//, new("fr-FR"), new("da-DK")];
+
+    static ReadOnlySpan<int> Mantissas =>
+        [
+            0,
+            1,
+            2,
+            3,
+            MantissaMidpoint - 1,
+            MantissaMidpoint,
+            MantissaMidpoint + 1,
+            MantissaMask - 3,
+            MantissaMask - 2,
+            MantissaMask - 1,
+            MantissaMask
+        ];
 
     public static IEnumerable<Float32TestCase> GetFloat32TestData() => EnumerateFloat32TestData();
 
@@ -33,20 +46,23 @@ public class SimdTest_Parse
 
         foreach (var cultureInfo in CultureInfos)
         {
-            var cultureName = cultureInfo?.Name ?? "";
-
-            Assert.IsTrue(v.TryFormat(chars, out var charsWritten, format: default, provider: cultureInfo));
-            var span = chars[..charsWritten];
-
-            var parseBCL = float.TryParse(span, provider: cultureInfo, out var actualBCL);
-            var parseSimd = float.TryParseSimd(span, provider: cultureInfo, out var actualSimd);
-            if (!(parseBCL && parseSimd))
+            foreach (var formats in Formats)
             {
-                Assert.Fail($"{new string(span)} {cultureName}");
-            }
+                var cultureName = cultureInfo?.Name ?? "";
 
-            AssertEqualsOrNaN(v, actualBCL);
-            AssertEqualsOrNaN(v, actualSimd);
+                Assert.IsTrue(v.TryFormat(chars, out var charsWritten, format: default, provider: cultureInfo));
+                var span = chars[..charsWritten];
+
+                var parseBCL = float.TryParse(span, provider: cultureInfo, out var actualBCL);
+                var parseSimd = float.TryParseSimd(span, provider: cultureInfo, out var actualSimd);
+                if (!(parseBCL && parseSimd))
+                {
+                    Assert.Fail($"{new string(span)} {cultureName}");
+                }
+
+                AssertEqualsOrNaN(v, actualBCL);
+                AssertEqualsOrNaN(v, actualSimd);
+            }
         }
     }
 
@@ -79,27 +95,6 @@ public class SimdTest_Parse
         }
         return testCases;
     }
-
-    static ReadOnlySpan<int> SignBits => [0, NegativeSignBit];
-
-    static string?[] Formats { get; } = [null, "G9", "R", "E9"];
-
-    static CultureInfo?[] CultureInfos { get; } = [null, new(""), new("en-US")];//, new("fr-FR"), new("da-DK")];
-
-    static ReadOnlySpan<int> Mantissas =>
-        [
-            0,
-            1,
-            2,
-            3,
-            MantissaMidpoint - 1,
-            MantissaMidpoint,
-            MantissaMidpoint + 1,
-            MantissaMask - 3,
-            MantissaMask - 2,
-            MantissaMask - 1,
-            MantissaMask
-        ];
 
     static string CreateName(int signBit, int exponent, int mantissa)
     {
@@ -141,5 +136,11 @@ public class SimdTest_Parse
 
     static string GetFormatDisplayName(string? format) => format ?? "Default";
 
+    public readonly record struct Float32TestCase(string Name, int Bits)
+    {
+        public float Value => BitConverter.Int32BitsToSingle(Bits);
+
+        public override string ToString() => Name;
+    }
 
 }
