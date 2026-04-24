@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace SimdSharp.Test;
@@ -25,6 +26,13 @@ public class SimdTest_Parse
     static CultureInfo?[] CultureInfos { get; } =
         [null, new(""), new("en-US"), new("fr-FR"), new("da-DK")];
 
+    static string[] LeadingAffixes { get; } = ["", " ", "\t", "+"];
+
+    static string[] TrailingAffixes { get; } = ["", " ", "\t"];
+
+    static float[] ParseCoverageValues { get; } =
+        [0f, 1f, -1f, 12.5f, -12.5f, 1234.5f, -1234.5f, 1234567f, 1.23e-4f, -1.23e-4f];
+
     static ReadOnlySpan<int> Mantissas =>
         [
             0,
@@ -41,6 +49,8 @@ public class SimdTest_Parse
         ];
 
     public static IEnumerable<Float32TestCase> GetFloat32TestData { get; } = EnumerateFloat32TestData();
+
+    public static IEnumerable<ParseTextCase> GetParseCoverageData { get; } = EnumerateParseCoverageData();
 
     [TestMethod]
     [DynamicData(nameof(GetFloat32TestData))]
@@ -72,6 +82,23 @@ public class SimdTest_Parse
     }
 
     [TestMethod]
+    [DynamicData(nameof(GetParseCoverageData))]
+    public void SimdTest_Parse_Coverage_BCL_(ParseTextCase testCase)
+    {
+        var parseBCL = float.TryParse(testCase.Text, provider: testCase.CultureInfo, out var actualBCL);
+        var parseSimd = float.TryParseSimd(testCase.Text, provider: testCase.CultureInfo, out var actualSimd);
+
+        Assert.AreEqual(parseBCL, parseSimd, testCase.ToString());
+        if (!parseBCL)
+        {
+            return;
+        }
+
+        AssertEqualsOrNaN(actualBCL, actualSimd);
+        AssertEqualsOrNaN(testCase.ExpectedValue, actualSimd);
+    }
+
+    [TestMethod]
     [DynamicData(nameof(GetFloat32TestData))]
     public void SimdTest_Parse_Float32Enumerator_RoundTripsBits(Float32TestCase testCase)
     {
@@ -99,6 +126,126 @@ public class SimdTest_Parse
         }
         return testCases;
     }
+
+    static List<ParseTextCase> EnumerateParseCoverageData()
+    {
+        List<ParseTextCase> testCases = [];
+        foreach (var cultureInfo in CultureInfos)
+        {
+            var culture = cultureInfo ?? CultureInfo.InvariantCulture;
+            foreach (var value in ParseCoverageValues)
+            {
+                foreach (var textCase in EnumerateParseCoverageData(culture, value))
+                {
+                    testCases.Add(textCase);
+                }
+            }
+        }
+
+        return testCases;
+    }
+
+    static IEnumerable<ParseTextCase> EnumerateParseCoverageData(CultureInfo cultureInfo, float value)
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var textCase in EnumerateGeneralParseCoverageData(cultureInfo, value))
+        {
+            if (seen.Add(textCase.Text))
+            {
+                yield return textCase;
+            }
+        }
+
+        foreach (var textCase in EnumerateThousandsSeparatedParseCoverageData(cultureInfo, value))
+        {
+            if (seen.Add(textCase.Text))
+            {
+                yield return textCase;
+            }
+        }
+    }
+
+    static IEnumerable<ParseTextCase> EnumerateGeneralParseCoverageData(CultureInfo cultureInfo, float value)
+    {
+        foreach (var format in Formats)
+        {
+            var text = value.ToString(format, cultureInfo);
+            foreach (var affixedText in EnumerateAffixedTexts(text, value >= 0))
+            {
+                yield return new ParseTextCase(
+                    CreateParseCaseName(cultureInfo, format, value, "General", affixedText),
+                    affixedText,
+                    value,
+                    cultureInfo);
+            }
+        }
+    }
+
+    static IEnumerable<ParseTextCase> EnumerateThousandsSeparatedParseCoverageData(CultureInfo cultureInfo, float value)
+    {
+        if (!float.IsFinite(value))
+        {
+            yield break;
+        }
+
+        var absValue = MathF.Abs(value);
+        if (absValue < 1000f)
+        {
+            yield break;
+        }
+
+        var text = value.ToString("N6", cultureInfo);
+        while (text.Contains(cultureInfo.NumberFormat.NumberDecimalSeparator, StringComparison.Ordinal) && text.EndsWith("0", StringComparison.Ordinal))
+        {
+            text = text[..^1];
+        }
+
+        if (text.EndsWith(cultureInfo.NumberFormat.NumberDecimalSeparator, StringComparison.Ordinal))
+        {
+            text = text[..^cultureInfo.NumberFormat.NumberDecimalSeparator.Length];
+        }
+
+        foreach (var affixedText in EnumerateAffixedTexts(text, value >= 0))
+        {
+            yield return new ParseTextCase(
+                CreateParseCaseName(cultureInfo, "N6", value, "Thousands", affixedText),
+                affixedText,
+                value,
+                cultureInfo);
+        }
+    }
+
+    static IEnumerable<string> EnumerateAffixedTexts(string text, bool isPositive)
+    {
+        foreach (var leading in LeadingAffixes)
+        {
+            if (leading == "+" && !isPositive)
+            {
+                continue;
+            }
+
+            var prefixedText = leading == "+" ? AddLeadingPlus(text) : leading + text;
+            foreach (var trailing in TrailingAffixes)
+            {
+                yield return prefixedText + trailing;
+            }
+        }
+    }
+
+    static string AddLeadingPlus(string text)
+        => text.Length > 0 && (text[0] == '+' || text[0] == '-') ? text : "+" + text;
+
+    static string CreateParseCaseName(CultureInfo cultureInfo, string? format, float value, string category, string text)
+        => string.Join(
+            "_",
+            [
+                category,
+                GetCultureDisplayName(cultureInfo.Name),
+                GetFormatDisplayName(format),
+                value.ToString("R", CultureInfo.InvariantCulture),
+                text.Replace(" ", "␠", StringComparison.Ordinal).Replace("\t", "\\t", StringComparison.Ordinal)
+            ]);
 
     static string CreateName(int signBit, int exponent, int mantissa)
     {
@@ -141,6 +288,11 @@ public class SimdTest_Parse
     {
         public float Value => BitConverter.Int32BitsToSingle(Bits);
 
+        public override string ToString() => Name;
+    }
+
+    public readonly record struct ParseTextCase(string Name, string Text, float ExpectedValue, CultureInfo CultureInfo)
+    {
         public override string ToString() => Name;
     }
 
