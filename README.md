@@ -43,23 +43,23 @@ Benchmarks.
 
 | Method                   | TotalLength | MaxLineLength | Mean           | Ratio | Allocated | Alloc Ratio |
 |------------------------- |------------ |-------------- |---------------:|------:|----------:|------------:|
-| EnumerateLines_BCL       | 143         | 0             |     419.458 ns |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp | 143         | 0             |      55.128 ns |  0.13 |         - |          NA |
+| EnumerateLines_BCL       | 143         | 0             |     419.013 ns |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 143         | 0             |      53.888 ns |  0.13 |         - |          NA |
 |                          |             |               |                |       |           |             |
-| EnumerateLines_BCL       | 143         | 8             |     173.831 ns |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp | 143         | 8             |      30.703 ns |  0.18 |         - |          NA |
+| EnumerateLines_BCL       | 143         | 8             |     173.825 ns |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 143         | 8             |      27.933 ns |  0.16 |         - |          NA |
 |                          |             |               |                |       |           |             |
-| EnumerateLines_BCL       | 143         | 128           |      15.367 ns |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp | 143         | 128           |       8.197 ns |  0.53 |         - |          NA |
+| EnumerateLines_BCL       | 143         | 128           |      15.425 ns |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 143         | 128           |       7.553 ns |  0.49 |         - |          NA |
 |                          |             |               |                |       |           |             |
-| EnumerateLines_BCL       | 32768       | 0             | 101,732.839 ns |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp | 32768       | 0             |  11,697.107 ns |  0.11 |         - |          NA |
+| EnumerateLines_BCL       | 32768       | 0             | 101,518.412 ns |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 32768       | 0             |  11,228.387 ns |  0.11 |         - |          NA |
 |                          |             |               |                |       |           |             |
-| EnumerateLines_BCL       | 32768       | 8             |  37,258.604 ns |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp | 32768       | 8             |   5,219.503 ns |  0.14 |         - |          NA |
+| EnumerateLines_BCL       | 32768       | 8             |  37,248.524 ns |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 32768       | 8             |   4,943.082 ns |  0.13 |         - |          NA |
 |                          |             |               |                |       |           |             |
-| EnumerateLines_BCL       | 32768       | 128           |   3,499.140 ns |  1.00 |         - |          NA |
-| EnumerateLines_SimdSharp | 32768       | 128           |     830.216 ns |  0.24 |         - |          NA |
+| EnumerateLines_BCL       | 32768       | 128           |   3,505.707 ns |  1.00 |         - |          NA |
+| EnumerateLines_SimdSharp | 32768       | 128           |     765.798 ns |  0.22 |         - |          NA |
 
 
 ## Example Catalogue
