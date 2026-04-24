@@ -22,7 +22,8 @@ public class SimdTest_Parse
 
     static string?[] Formats { get; } = [null, "G9", "R", "E9"];
 
-    static CultureInfo?[] CultureInfos { get; } = [null, new(""), new("en-US"), new("fr-FR"), new("da-DK")];
+    static CultureInfo?[] CultureInfos { get; } =
+        [null, new(""), new("en-US"), new("fr-FR"), new("da-DK")];
 
     static ReadOnlySpan<int> Mantissas =>
         [
@@ -39,7 +40,7 @@ public class SimdTest_Parse
             MantissaMask
         ];
 
-    public static IEnumerable<Float32TestCase> GetFloat32TestData() => EnumerateFloat32TestData();
+    public static IEnumerable<Float32TestCase> GetFloat32TestData { get; } = EnumerateFloat32TestData();
 
     [TestMethod]
     [DynamicData(nameof(GetFloat32TestData))]
@@ -91,9 +92,8 @@ public class SimdTest_Parse
                 foreach (var mantissa in Mantissas)
                 {
                     var bits = signBit | (exponent << ExponentShift) | mantissa;
-                    testCases.Add(new Float32TestCase(
-                        Name: CreateName(signBit, exponent, mantissa),
-                        Bits: bits));
+                    var name = CreateName(signBit, exponent, mantissa);
+                    testCases.Add(new Float32TestCase(name, bits));
                 }
             }
         }
@@ -126,9 +126,6 @@ public class SimdTest_Parse
             Assert.AreEqual(SingleToBits(expected), SingleToBits(actual));
         }
     }
-
-    static bool IsNaN(int bits)
-        => ((bits >> ExponentShift) & ExponentMask) == ExponentCount - 1 && (bits & MantissaMask) != 0;
 
     static int SingleToBits(float value) => BitConverter.SingleToInt32Bits(value);
 
