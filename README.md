@@ -90,11 +90,19 @@ namespace SimdSharp
     public static class Simd
     {
         public static SimdSharp.Simd.MaskSpanLineEnumeratorUTF16 EnumerateLines(System.ReadOnlySpan<char> span) { }
+        public static bool TryParseSimd<T>(System.ReadOnlySpan<char> s, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] System.IFormatProvider? provider, out T result)
+            where T : System.ISpanParsable<T> { }
         public ref struct MaskSpanLineEnumeratorUTF16 : System.Collections.Generic.IEnumerator<System.ReadOnlySpan<char>>, System.Collections.IEnumerator, System.IDisposable
         {
             public System.ReadOnlySpan<char> Current { get; }
             public SimdSharp.Simd.MaskSpanLineEnumeratorUTF16 GetEnumerator() { }
             public bool MoveNext() { }
+        }
+        extension<T>(T)
+            where T : System.ISpanParsable<T>
+        {
+            public static T ParseSimd(System.ReadOnlySpan<char> s, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] System.IFormatProvider? provider) { }
+            public static bool TryParseSimd(System.ReadOnlySpan<char> s, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] System.IFormatProvider? provider, out T result) { }
         }
     }
 }

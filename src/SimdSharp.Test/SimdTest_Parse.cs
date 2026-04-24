@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace SimdSharp.Test;
@@ -7,38 +8,55 @@ namespace SimdSharp.Test;
 [TestClass]
 public class SimdTest_Parse
 {
+
     const int ExponentShift = 23;
     const int ExponentCount = 256;
     const int MantissaMask = 0x007F_FFFF;
     const int MantissaMidpoint = 0x0040_0000;
     const int NegativeSignBit = unchecked((int)0x8000_0000);
 
-    public record Float32TestCase(string Name, int Bits)
+    public readonly record struct Float32TestCase(string Name, int Bits)
     {
         public float Value => BitConverter.Int32BitsToSingle(Bits);
 
         public override string ToString() => Name;
     }
 
-    public static IEnumerable<Float32TestCase> Float32TestData { get; } = EnumerateFloat32TestData();
+    public static IEnumerable<Float32TestCase> GetFloat32TestData() => EnumerateFloat32TestData();
 
     [TestMethod]
-    [DynamicData(nameof(Float32TestData))]
-    public void SimdTest_Parse_RoundTrip_BCL(Float32TestCase testCase)
+    [DynamicData(nameof(GetFloat32TestData))]
+    public void SimdTest_Parse_RoundTrip_BCL_(Float32TestCase testCase)
     {
         var v = testCase.Value;
         Span<char> chars = stackalloc char[1024];
-        Assert.IsTrue(v.TryFormat(chars, out var charsWritten));
-        Assert.IsTrue(float.TryParse(chars.Slice(0, charsWritten), null, out var actual));
-        Assert.AreEqual(v, actual);
+
+        foreach (var cultureInfo in CultureInfos)
+        {
+            var cultureName = cultureInfo?.Name ?? "";
+
+            Assert.IsTrue(v.TryFormat(chars, out var charsWritten, format: default, provider: cultureInfo));
+            var span = chars[..charsWritten];
+
+            var parseBCL = float.TryParse(span, provider: cultureInfo, out var actualBCL);
+            var parseSimd = float.TryParseSimd(span, provider: cultureInfo, out var actualSimd);
+            if (!(parseBCL && parseSimd))
+            {
+                Assert.Fail($"{new string(span)} {cultureName}");
+            }
+
+            AssertEqualsOrNaN(v, actualBCL);
+            AssertEqualsOrNaN(v, actualSimd);
+        }
     }
 
     [TestMethod]
-    [DynamicData(nameof(Float32TestData))]
+    [DynamicData(nameof(GetFloat32TestData))]
     public void SimdTest_Parse_Float32Enumerator_RoundTripsBits(Float32TestCase testCase)
     {
         var value = testCase.Value;
-        var bits = BitConverter.SingleToInt32Bits(value);
+
+        var bits = SingleToBits(value);
 
         Assert.AreEqual(testCase.Bits, bits);
     }
@@ -63,6 +81,10 @@ public class SimdTest_Parse
     }
 
     static ReadOnlySpan<int> SignBits => [0, NegativeSignBit];
+
+    static string?[] Formats { get; } = [null, "G9", "R", "E9"];
+
+    static CultureInfo?[] CultureInfos { get; } = [null, new(""), new("en-US")];//, new("fr-FR"), new("da-DK")];
 
     static ReadOnlySpan<int> Mantissas =>
         [
@@ -93,6 +115,31 @@ public class SimdTest_Parse
 
         return $"{sign}_{kind}_E{exponent:X2}_M{mantissa:X6}";
     }
+
+    static void AssertEqualsOrNaN(float expected, float actual)
+    {
+        if (float.IsNaN(expected))
+        {
+            Assert.IsTrue(float.IsNaN(actual));
+        }
+        else
+        {
+            Assert.AreEqual(SingleToBits(expected), SingleToBits(actual));
+        }
+    }
+
+    static bool IsNaN(int bits)
+        => ((bits >> ExponentShift) & 0xFF) == ExponentCount - 1 && (bits & MantissaMask) != 0;
+
+    static int SingleToBits(float value) => BitConverter.SingleToInt32Bits(value);
+
+    static CultureInfo GetCulture(string cultureName) =>
+        cultureName.Length == 0 ? CultureInfo.InvariantCulture : CultureInfo.GetCultureInfo(cultureName);
+
+    static string GetCultureDisplayName(string cultureName) =>
+        cultureName.Length == 0 ? "Invariant" : cultureName;
+
+    static string GetFormatDisplayName(string? format) => format ?? "Default";
 
 
 }
