@@ -10,6 +10,7 @@ public class SimdTest_Parse
     const int ExponentShift = 23;
     const int ExponentCount = 256;
     const int MantissaMask = 0x007F_FFFF;
+    const int MantissaMidpoint = 0x0040_0000;
     const int NegativeSignBit = unchecked((int)0x8000_0000);
 
     public record Float32TestCase(string Name, int Bits)
@@ -52,7 +53,20 @@ public class SimdTest_Parse
 
     static ReadOnlySpan<int> SignBits => [0, NegativeSignBit];
 
-    static ReadOnlySpan<int> Mantissas => [0, 1, MantissaMask - 1, MantissaMask];
+    static ReadOnlySpan<int> Mantissas =>
+        [
+            0,
+            1,
+            2,
+            3,
+            MantissaMidpoint - 1,
+            MantissaMidpoint,
+            MantissaMidpoint + 1,
+            MantissaMask - 3,
+            MantissaMask - 2,
+            MantissaMask - 1,
+            MantissaMask
+        ];
 
     static string CreateName(int signBit, int exponent, int mantissa)
     {
