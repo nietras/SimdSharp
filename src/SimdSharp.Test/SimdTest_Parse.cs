@@ -47,7 +47,7 @@ public class SimdTest_Parse
     public void SimdTest_Parse_RoundTrip_BCL_(Float32TestCase testCase)
     {
         var v = testCase.Value;
-        Span<char> chars = stackalloc char[1024];
+        Span<char> formatBuffer = stackalloc char[1024];
 
         foreach (var cultureInfo in CultureInfos)
         {
@@ -55,14 +55,14 @@ public class SimdTest_Parse
             {
                 var cultureName = cultureInfo?.Name ?? "";
 
-                Assert.IsTrue(v.TryFormat(chars, out var charsWritten, format: default, provider: cultureInfo));
-                var span = chars[..charsWritten];
+                Assert.IsTrue(v.TryFormat(formatBuffer, out var charsWritten, format: default, provider: cultureInfo));
+                var formatSpan = formatBuffer[..charsWritten];
 
-                var parseBCL = float.TryParse(span, provider: cultureInfo, out var actualBCL);
-                var parseSimd = float.TryParseSimd(span, provider: cultureInfo, out var actualSimd);
+                var parseBCL = float.TryParse(formatSpan, provider: cultureInfo, out var actualBCL);
+                var parseSimd = float.TryParseSimd(formatSpan, provider: cultureInfo, out var actualSimd);
                 if (!(parseBCL && parseSimd))
                 {
-                    Assert.Fail($"{new string(span)} {cultureName}");
+                    Assert.Fail($"{new string(formatSpan)} {cultureName}");
                 }
 
                 AssertEqualsOrNaN(v, actualBCL);
