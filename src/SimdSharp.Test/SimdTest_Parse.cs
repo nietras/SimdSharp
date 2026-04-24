@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace SimdSharp.Test;
@@ -26,9 +25,13 @@ public class SimdTest_Parse
     static CultureInfo?[] CultureInfos { get; } =
         [null, new(""), new("en-US"), new("fr-FR"), new("da-DK")];
 
-    static string[] LeadingAffixes { get; } = ["", " ", "\t", "+"];
+    static string[] LeadingAffixes { get; } = ["", " ", "  ", "   ", "\t", "+"];
 
-    static string[] TrailingAffixes { get; } = ["", " ", "\t"];
+    static int MaxLeadingAffixLength { get; } = GetMaxLength(LeadingAffixes);
+
+    static string[] TrailingAffixes { get; } = ["", " ", "  ", "   ", "\t"];
+
+    static int MaxTrailingAffixLength { get; } = GetMaxLength(TrailingAffixes);
 
     static float[] ParseCoverageValues { get; } =
         [0f, 1f, -1f, 12.5f, -12.5f, 1234.5f, -1234.5f, 1234567f, 1.23e-4f, -1.23e-4f];
@@ -57,26 +60,52 @@ public class SimdTest_Parse
     public void SimdTest_Parse_RoundTrip_BCL_(Float32TestCase testCase)
     {
         var v = testCase.Value;
-        Span<char> formatBuffer = stackalloc char[1024];
+        Span<char> parseBuffer = stackalloc char[1024 + MaxLeadingAffixLength + MaxTrailingAffixLength];
 
         foreach (var cultureInfo in CultureInfos)
         {
-            foreach (var formats in Formats)
+            foreach (var format in Formats)
             {
                 var cultureName = cultureInfo?.Name ?? "";
 
-                Assert.IsTrue(v.TryFormat(formatBuffer, out var charsWritten, format: default, provider: cultureInfo));
-                var formatSpan = formatBuffer[..charsWritten];
+                var formatDestination = parseBuffer[MaxLeadingAffixLength..];
+                Assert.IsTrue(v.TryFormat(formatDestination, out var charsWritten,
+                    format: format, provider: cultureInfo));
 
-                var parseBCL = float.TryParse(formatSpan, provider: cultureInfo, out var actualBCL);
-                var parseSimd = float.TryParseSimd(formatSpan, provider: cultureInfo, out var actualSimd);
-                if (!(parseBCL && parseSimd))
+                foreach (var leading in LeadingAffixes)
                 {
-                    Assert.Fail($"{new string(formatSpan)} {cultureName}");
-                }
+                    if (leading == "+" && float.IsNegative(v)) { continue; }
 
-                AssertEqualsOrNaN(v, actualBCL);
-                AssertEqualsOrNaN(v, actualSimd);
+                    var leadingSpan = leading == "+" ? "+".AsSpan() : leading.AsSpan();
+                    var leadingLength = leadingSpan.Length;
+                    var start = MaxLeadingAffixLength - leadingLength;
+
+                    if (leadingLength > 0)
+                    {
+                        leadingSpan.CopyTo(parseBuffer[start..]);
+                    }
+
+                    foreach (var trailing in TrailingAffixes)
+                    {
+                        var trailingSpan = trailing.AsSpan();
+                        var totalLength = leadingLength + charsWritten + trailingSpan.Length;
+                        Assert.IsLessThanOrEqualTo(parseBuffer.Length, totalLength);
+
+                        trailingSpan.CopyTo(parseBuffer[(MaxLeadingAffixLength + charsWritten)..]);
+
+                        var parseText = parseBuffer[start..(start + totalLength)];
+
+                        var parseBCL = float.TryParse(parseText, provider: cultureInfo, out var actualBCL);
+                        var parseSimd = float.TryParseSimd(parseText, provider: cultureInfo, out var actualSimd);
+                        if (!(parseBCL && parseSimd))
+                        {
+                            Assert.Fail($"{parseText} {cultureName} {GetFormatDisplayName(format)}");
+                        }
+
+                        AssertEqualsOrNaN(v, actualBCL);
+                        AssertEqualsOrNaN(v, actualSimd);
+                    }
+                }
             }
         }
     }
@@ -231,6 +260,20 @@ public class SimdTest_Parse
                 yield return prefixedText + trailing;
             }
         }
+    }
+
+    static int GetMaxLength(string[] values)
+    {
+        var maxLength = 0;
+        foreach (var value in values)
+        {
+            if (value.Length > maxLength)
+            {
+                maxLength = value.Length;
+            }
+        }
+
+        return maxLength;
     }
 
     static string AddLeadingPlus(string text)
