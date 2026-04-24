@@ -24,6 +24,17 @@ public class SimdTest_Parse
 
     [TestMethod]
     [DynamicData(nameof(Float32TestData))]
+    public void SimdTest_Parse_RoundTrip_BCL(Float32TestCase testCase)
+    {
+        var v = testCase.Value;
+        Span<char> chars = stackalloc char[1024];
+        Assert.IsTrue(v.TryFormat(chars, out var charsWritten));
+        Assert.IsTrue(float.TryParse(chars.Slice(0, charsWritten), null, out var actual));
+        Assert.AreEqual(v, actual);
+    }
+
+    [TestMethod]
+    [DynamicData(nameof(Float32TestData))]
     public void SimdTest_Parse_Float32Enumerator_RoundTripsBits(Float32TestCase testCase)
     {
         var value = testCase.Value;
