@@ -170,7 +170,8 @@ public static partial class Simd
                     ref var pos = ref Unsafe.Add(ref spanRef, searchPosition);
                     fixed (ushort* posPtr = &pos)
                     {
-                        var loadMask = Vector512.LessThan(Vector512<ushort>.Indices, Vector512.Create((ushort)remaining));
+                        var loadMask = Vector512.LessThan(Vector512<ushort>.Indices,
+                            Vector512.Create((ushort)remaining));
                         var chunk = Avx512BW.MaskLoad(posPtr, loadMask, Vector512<ushort>.Zero);
                         var lfs = Vector512.Equals(chunk, lf);
                         var crs = Vector512.Equals(chunk, cr);
