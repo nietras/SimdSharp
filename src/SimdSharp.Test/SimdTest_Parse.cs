@@ -22,7 +22,7 @@ public class SimdTest_Parse
 
     static string?[] Formats { get; } = [null, "G9", "R", "E9"];
 
-    static CultureInfo?[] CultureInfos { get; } = [null, new(""), new("en-US")];//, new("fr-FR"), new("da-DK")];
+    static CultureInfo?[] CultureInfos { get; } = [null, new(""), new("en-US"), new("fr-FR"), new("da-DK")];
 
     static ReadOnlySpan<int> Mantissas =>
         [
