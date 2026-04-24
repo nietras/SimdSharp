@@ -51,12 +51,12 @@ public class SimdTest_Parse
             MantissaMask
         ];
 
-    public static IEnumerable<Float32TestCase> GetFloat32TestData { get; } = EnumerateFloat32TestData();
+    public static IEnumerable<Float32TestCase> Float32TestData { get; } = EnumerateFloat32TestData();
 
-    public static IEnumerable<ParseTextCase> GetParseCoverageData { get; } = EnumerateParseCoverageData();
+    public static IEnumerable<ParseTextCase> Float32CoverageData { get; } = EnumerateFloat32CoverageData();
 
     [TestMethod]
-    [DynamicData(nameof(GetFloat32TestData))]
+    [DynamicData(nameof(Float32TestData))]
     public void SimdTest_Parse_RoundTrip_BCL_(Float32TestCase testCase)
     {
         var v = testCase.Value;
@@ -111,7 +111,7 @@ public class SimdTest_Parse
     }
 
     [TestMethod]
-    [DynamicData(nameof(GetParseCoverageData))]
+    [DynamicData(nameof(Float32CoverageData))]
     public void SimdTest_Parse_Coverage_BCL_(ParseTextCase testCase)
     {
         var parseBCL = float.TryParse(testCase.Text, provider: testCase.CultureInfo, out var actualBCL);
@@ -128,7 +128,7 @@ public class SimdTest_Parse
     }
 
     [TestMethod]
-    [DynamicData(nameof(GetFloat32TestData))]
+    [DynamicData(nameof(Float32TestData))]
     public void SimdTest_Parse_Float32Enumerator_RoundTripsBits(Float32TestCase testCase)
     {
         var value = testCase.Value;
@@ -156,7 +156,7 @@ public class SimdTest_Parse
         return testCases;
     }
 
-    static List<ParseTextCase> EnumerateParseCoverageData()
+    static List<ParseTextCase> EnumerateFloat32CoverageData()
     {
         List<ParseTextCase> testCases = [];
         foreach (var cultureInfo in CultureInfos)
