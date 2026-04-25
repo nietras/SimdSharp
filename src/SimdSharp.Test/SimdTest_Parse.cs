@@ -52,20 +52,20 @@ public class SimdTest_Parse
             MantissaMask
         ];
 
-    public static List<Float32TestCase> Float32TestData { get; } = EnumerateFloat32TestData();
+    public static List<Float32TestCase> Float32BitsIteration { get; } = EnumerateFloat32TestData();
 
-    public static List<ParseTextCase> Float32CoverageData { get; } = EnumerateFloat32CoverageData();
+    public static List<ParseTextCase> Float32ManualCoverage { get; } = EnumerateFloat32CoverageData();
 
     [TestMethod]
     [DynamicData(nameof(CultureInfos))]
-    public void SimdTest_Parse_RoundTrip(CultureInfo? cultureInfo)
+    public void SimdTest_Parse_BitsIteration(CultureInfo? cultureInfo)
     {
         var cultureName = cultureInfo?.ToString() ?? "null";
         Span<char> parseBuffer = stackalloc char[1024 + MaxLeadingAffixLength + MaxTrailingAffixLength];
         var textLengthMin = int.MaxValue;
         var textLengthMax = 0;
-        int count = 0;
-        var tests = Float32TestData;
+        var count = 0;
+        var tests = Float32BitsIteration;
         foreach (var t in tests)
         {
             var v = t.Value;
@@ -119,66 +119,10 @@ public class SimdTest_Parse
         Trace.WriteLine($"'{cultureName,5}' {count} of [{textLengthMin}, {textLengthMax}] chars for {tests.Count} values");
     }
 
-    //[TestMethod]
-    //[DynamicData(nameof(Float32TestData))]
-    public void SimdTest_Parse_RoundTrip_BCL_(Float32TestCase testCase)
-    {
-        var v = testCase.Value;
-        Span<char> parseBuffer = stackalloc char[1024 + MaxLeadingAffixLength + MaxTrailingAffixLength];
-
-        foreach (var cultureInfo in CultureInfos)
-        {
-            foreach (var format in Formats)
-            {
-                var cultureName = cultureInfo?.Name ?? "";
-
-                var formatDestination = parseBuffer[MaxLeadingAffixLength..];
-                Assert.IsTrue(v.TryFormat(formatDestination, out var charsWritten,
-                    format: format, provider: cultureInfo));
-
-                foreach (var leading in LeadingAffixes)
-                {
-                    if (leading == "+" && float.IsNegative(v)) { continue; }
-
-                    var leadingSpan = leading == "+" ? "+".AsSpan() : leading.AsSpan();
-                    var leadingLength = leadingSpan.Length;
-                    var start = MaxLeadingAffixLength - leadingLength;
-
-                    if (leadingLength > 0)
-                    {
-                        leadingSpan.CopyTo(parseBuffer[start..]);
-                    }
-
-                    foreach (var trailing in TrailingAffixes)
-                    {
-                        var trailingSpan = trailing.AsSpan();
-                        var totalLength = leadingLength + charsWritten + trailingSpan.Length;
-                        Assert.IsLessThanOrEqualTo(parseBuffer.Length, totalLength);
-
-                        trailingSpan.CopyTo(parseBuffer[(MaxLeadingAffixLength + charsWritten)..]);
-
-                        var parseText = parseBuffer[start..(start + totalLength)];
-
-                        var parseBCL = float.TryParse(parseText, provider: cultureInfo, out var actualBCL);
-                        var parseSimd = float.TryParseSimd(parseText, provider: cultureInfo, out var actualSimd);
-                        if (!(parseBCL && parseSimd))
-                        {
-                            Assert.Fail($"{parseText} {cultureName} {GetFormatDisplayName(format)}");
-                        }
-
-                        AssertEqualsOrNaN(v, actualBCL);
-                        AssertEqualsOrNaN(v, actualSimd);
-                    }
-                }
-            }
-        }
-    }
-
     [TestMethod]
-    //[DynamicData(nameof(Float32CoverageData))]
-    public void SimdTest_Parse_Coverage_BCL_()//ParseTextCase testCase)
+    public void SimdTest_Parse_ManualCoverage()
     {
-        foreach (var testCase in Float32CoverageData)
+        foreach (var testCase in Float32ManualCoverage)
         {
             var parseBCL = float.TryParse(testCase.Text, provider: testCase.CultureInfo, out var actualBCL);
             var parseSimd = float.TryParseSimd(testCase.Text, provider: testCase.CultureInfo, out var actualSimd);
@@ -192,18 +136,7 @@ public class SimdTest_Parse
             AssertEqualsOrNaN(actualBCL, actualSimd);
             AssertEqualsOrNaN(testCase.ExpectedValue, actualSimd);
         }
-        Trace.WriteLine($"{Float32CoverageData.Count}");
-    }
-
-    //[TestMethod]
-    //[DynamicData(nameof(Float32TestData))]
-    public void SimdTest_Parse_Float32Enumerator_RoundTripsBits(Float32TestCase testCase)
-    {
-        var value = testCase.Value;
-
-        var bits = SingleToBits(value);
-
-        Assert.AreEqual(testCase.Bits, bits);
+        Trace.WriteLine($"{Float32ManualCoverage.Count}");
     }
 
     static List<Float32TestCase> EnumerateFloat32TestData()
