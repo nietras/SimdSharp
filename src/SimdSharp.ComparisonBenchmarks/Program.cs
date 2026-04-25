@@ -57,6 +57,7 @@ if (args.Length > 0)
 
     var nameToBenchTypesSet = new Dictionary<string, Type[]>()
     {
+        { nameof(ParseF32), new[] { typeof(ParseF32), } },
         { nameof(EnumerateLinesSpanUTF16), new[] { typeof(EnumerateLinesSpanUTF16), } },
         //{ nameof(TestBench), new[] { typeof(TestBench), } },
     };
