@@ -11,12 +11,8 @@ Toolchain=net10.0  IterationTime=350ms  MaxIterationCount=7
 MinIterationCount=3  WarmupCount=3  
 
 ```
-| Method               | Text          | Mean      | Ratio | Allocated | Alloc Ratio |
-|--------------------- |-------------- |----------:|------:|----------:|------------:|
-| ParseF32_SimdSharp   | 1,234,567.890 | 27.873 ns |  0.97 |         - |          NA |
-| ParseF32_csFastFloat | 1,234,567.890 |  4.099 ns |  0.14 |         - |          NA |
-| ParseF32_BCL         | 1,234,567.890 | 28.598 ns |  1.00 |         - |          NA |
-|                      |               |           |       |           |             |
-| ParseF32_SimdSharp   | 123           | 15.611 ns |  0.99 |         - |          NA |
-| ParseF32_csFastFloat | 123           |  3.425 ns |  0.22 |         - |          NA |
-| ParseF32_BCL         | 123           | 15.715 ns |  1.00 |         - |          NA |
+| Method               | Text        | Mean      | Ratio | Allocated | Alloc Ratio |
+|--------------------- |------------ |----------:|------:|----------:|------------:|
+| ParseF32_SimdSharp   | 1234567.890 | 25.936 ns |  1.03 |         - |          NA |
+| ParseF32_csFastFloat | 1234567.890 |  9.022 ns |  0.36 |         - |          NA |
+| ParseF32_BCL         | 1234567.890 | 25.297 ns |  1.00 |         - |          NA |

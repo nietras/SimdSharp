@@ -89,6 +89,8 @@ if (args.Length > 0)
 }
 else
 {
+    var f = new ParseF32();
+
     var b = new EnumerateLinesSpanUTF16();
     b.TotalLength = 32 * 1024 * 1024;
     b.MaxLineLength = 128;
