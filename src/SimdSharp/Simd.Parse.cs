@@ -47,7 +47,7 @@ public static partial class Simd
         var b = Vector128.LessThan(ascii9Plus1, a);
         if (!Vector128.All(b, (byte)0)) { value = 0; return false; }
 
-        if (Sse2.IsSupported)
+        if (Ssse3.IsSupported)
         {
             // extract the low bytes of each 16-bit word
             // @Credit  AQRIT
