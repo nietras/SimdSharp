@@ -53,7 +53,8 @@ public static partial class Simd
             // https://stackoverflow.com/questions/66371621/hardware-simd-parsing-in-c-sharp-performance-improvement/66430672
             Vector128<byte> mul1 = Vector128.Create(0x14C814C8, 0x010A0A64, 0, 0).AsByte();
             Vector128<short> mul2 = Vector128.Create(0x00FA61A8, 0x0001000A, 0, 0).AsInt16();
-            var vb = Vector128.Shuffle(a.AsByte(), Vector128.Create(0, 2, 4, 6, 8, 10, 12, 14, 0, 2, 4, 6, 8, 10, 12, 14).AsByte());
+            var shuffles = Vector128.Create((byte)0, 2, 4, 6, 8, 10, 12, 14, 0, 2, 4, 6, 8, 10, 12, 14);
+            var vb = Vector128.Shuffle(a.AsByte(), shuffles);
             Vector128<int> v = Sse2.MultiplyAddAdjacent(Ssse3.MultiplyAddAdjacent(mul1, vb.AsSByte()), mul2);
             v = Sse2.Add(Sse2.Add(v, v), Sse2.Shuffle(v, 1));
             value = (uint)v.GetElement(0);
@@ -68,6 +69,8 @@ public static partial class Simd
             //var rawu16 = a.AsUInt16();
             var a2 = Vector128.Subtract(rawu16, Vector128.Create((ushort)(48)));
             //var b2 = Vector128.Subtract(rawu16, Vector128.Create((ushort)(48 + 9)));
+            // PackUnsignedSaturate is faster but this path is not for x86
+            //var packed = Sse2.PackUnsignedSaturate(raw, raw); // convert digits from UTF16-LE to ASCII
             var packed2 = Vector128.NarrowWithSaturation(a2, a2);
             var val = packed2.AsUInt64()[0];
 
