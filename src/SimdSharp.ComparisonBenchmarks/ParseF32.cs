@@ -16,7 +16,7 @@ public class ParseF32
     [ParamsSource(nameof(Texts))]
     public string Text { get; set; } = Texts().First();
     // csFastFloat fails with thousands separator!
-    public static IEnumerable<string> Texts() => ["1234567.890"]; //["1,234,567.890"];
+    public static IEnumerable<string> Texts() => ["12345678", "1234567.890"]; //["1,234,567.890"];
 
     public ParseF32()
     {

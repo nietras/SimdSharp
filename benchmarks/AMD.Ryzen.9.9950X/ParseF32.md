@@ -13,6 +13,10 @@ MinIterationCount=3  WarmupCount=3
 ```
 | Method               | Text        | Mean      | Ratio | Allocated | Alloc Ratio |
 |--------------------- |------------ |----------:|------:|----------:|------------:|
-| ParseF32_SimdSharp   | 1234567.890 | 25.936 ns |  1.03 |         - |          NA |
-| ParseF32_csFastFloat | 1234567.890 |  9.022 ns |  0.36 |         - |          NA |
-| ParseF32_BCL         | 1234567.890 | 25.297 ns |  1.00 |         - |          NA |
+| ParseF32_SimdSharp   | 1234567.890 | 25.952 ns |  1.03 |         - |          NA |
+| ParseF32_csFastFloat | 1234567.890 |  9.049 ns |  0.36 |         - |          NA |
+| ParseF32_BCL         | 1234567.890 | 25.197 ns |  1.00 |         - |          NA |
+|                      |             |           |       |           |             |
+| ParseF32_SimdSharp   | 12345678    | 20.533 ns |  1.02 |         - |          NA |
+| ParseF32_csFastFloat | 12345678    |  6.181 ns |  0.31 |         - |          NA |
+| ParseF32_BCL         | 12345678    | 20.123 ns |  1.00 |         - |          NA |

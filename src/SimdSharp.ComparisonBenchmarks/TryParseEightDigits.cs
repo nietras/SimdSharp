@@ -34,20 +34,28 @@ public unsafe class TryParseEightDigits
     }
 
     [Benchmark()]
-    public bool TryParseEightDigits_SimdSharp()
+    public uint TryParseEightDigits_SimdSharp()
     {
-        return Simd.TryParseEightDigits(ref MemoryMarshal.GetReference(Text.AsSpan()), out var value);
+        Simd.TryParseEightDigits(ref MemoryMarshal.GetReference(Text.AsSpan()), out var value);
+        return value;
     }
 
     [Benchmark()]
-    public bool TryParseEightDigits_csFastFloat()
+    public uint TryParseEightDigits_csFastFloat()
     {
         if (!Sse41.IsSupported) { return TryParseEightDigits_BCL(); }
         fixed (char* chars = Text)
-        { return FastFloatAccessor.TryParseEightConsecutiveDigits_SIMD(null, chars, out var value); }
+        {
+            FastFloatAccessor.TryParseEightConsecutiveDigits_SIMD(null, chars, out var value);
+            return value;
+        }
     }
 
     // Not fair comparison, but just for baseline.
     [Benchmark(Baseline = true)]
-    public bool TryParseEightDigits_BCL() => uint.TryParse(Text.AsSpan(), out var value);
+    public uint TryParseEightDigits_BCL()
+    {
+        uint.TryParse(Text.AsSpan(), out var value);
+        return value;
+    }
 }
