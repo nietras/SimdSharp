@@ -39,7 +39,7 @@ Benchmarks.
 
 ##### EnumerateLinesSpanUTF16 Benchmark Results
 
-###### AMD.Ryzen.9.9950X - EnumerateLinesSpanUTF16 Benchmark Results (SimdSharp 0.0.2.0, System 10.0.726.21808)
+###### AMD.Ryzen.9.9950X - EnumerateLinesSpanUTF16 Benchmark Results (SimdSharp 0.0.3.0, System 10.0.726.21808)
 
 | Method                   | TotalLength | MaxLineLength | Mean           | Ratio | Allocated | Alloc Ratio |
 |------------------------- |------------ |-------------- |---------------:|------:|----------:|------------:|
