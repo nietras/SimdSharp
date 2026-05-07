@@ -22,12 +22,12 @@ public unsafe class TryParseEightDigits
         foreach (var t in Texts())
         {
             Text = t;
-            var f0 = TryParseEightDigits_SimdSharp();
-            var f1 = TryParseEightDigits_csFastFloat();
-            var f2 = TryParseEightDigits_BCL();
-            if (f0 != f1 || f0 != f2)
+            var v0 = TryParseEightDigits_SimdSharp();
+            var v1 = TryParseEightDigits_csFastFloat();
+            var v2 = TryParseEightDigits_BCL();
+            if (v0 != v1 || v0 != v2)
             {
-                throw new ArgumentException($"{t} {f1}");
+                throw new ArgumentException($"{t} {v1}");
             }
         }
         Text = Texts().First();
@@ -42,17 +42,9 @@ public unsafe class TryParseEightDigits
     [Benchmark()]
     public bool TryParseEightDigits_csFastFloat()
     {
-        if (Sse41.IsSupported)
-        {
-            fixed (char* chars = Text)
-            {
-                return FastFloatAccessor.TryParseEightConsecutiveDigits_SIMD(null, chars, out var value);
-            }
-        }
-        else
-        {
-            return TryParseEightDigits_BCL();
-        }
+        if (!Sse41.IsSupported) { return TryParseEightDigits_BCL(); }
+        fixed (char* chars = Text)
+        { return FastFloatAccessor.TryParseEightConsecutiveDigits_SIMD(null, chars, out var value); }
     }
 
     // Not fair comparison, but just for baseline.
