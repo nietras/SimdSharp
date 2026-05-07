@@ -26,29 +26,30 @@ public static partial class Simd
     }
 
     /// <summary>
-    /// Detect eight consecutive digits and parse them a an unsigned int using SIMD instructions
+    /// Detect eight consecutive digits and parse them as an unsigned int using
+    /// SIMD instructions.
     /// </summary>
-    /// <param name="startRef">pointer to the sequence of char to evaluate</param>
-    /// <param name="value">out : parsed value</param>
-    /// <returns>bool : succes of operation : true meaning the sequence contains at least 8 consecutive digits</returns>
+    /// <returns>true if sequence contains at least 8 consecutive digits,
+    /// otherwise false</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal unsafe static bool TryParseEightDigits(ref char startRef, out uint value)
+    internal static bool TryParseEightDigits(ref char startRef, out uint value)
     {
-        // escape if SIMD functions aren't available.
-        //if (!Vector128.IsHardwareAccelerated) { value = 0; return false; }
+        // Adopted from csFastFloat but with cross-platform Vector128 migration
+        // and support, so it works on ARM with NEON for example.
 
-        Vector128<short> raw = Unsafe.ReadUnaligned<Vector128<short>>(ref Unsafe.As<char, byte>(ref startRef)); // Vector128.Load(ref startRef); // Sse3.LoadDquVector128((short*)start);
-        var ascii0 = Vector128.Create((short)(48 + short.MinValue));
-        var after_ascii9 = Vector128.Create((short)(short.MinValue + 9));
-        Vector128<short> a = Vector128.Subtract(raw, ascii0);
-        Vector128<short> b = Vector128.LessThan(after_ascii9, a); // Sse2.CompareLessThan(after_ascii9, a);
+        var raw = Unsafe.ReadUnaligned<Vector128<short>>(ref Unsafe.As<char, byte>(ref startRef));
+        // Sse41/2 as better support for signed 16-bit so using that here
+        var ascii0 = Vector128.Create((short)(48 + short.MinValue)); // 48 = 0x30 = '0'
+        var ascii9Plus1 = Vector128.Create((short)(short.MinValue + 9));
+        var a = Vector128.Subtract(raw, ascii0);
 
-        //if (!Sse41.TestZ(b, b)) { value = 0; return false; }
+        // Check all are digits
+        var b = Vector128.LessThan(ascii9Plus1, a);
         if (!Vector128.All(b, (byte)0)) { value = 0; return false; }
 
         if (Sse2.IsSupported)
         {
-            //  extract the low bytes of each 16-bit word
+            // extract the low bytes of each 16-bit word
             // @Credit  AQRIT
             // https://stackoverflow.com/questions/66371621/hardware-simd-parsing-in-c-sharp-performance-improvement/66430672
             Vector128<byte> mul1 = Vector128.Create(0x14C814C8, 0x010A0A64, 0, 0).AsByte();
@@ -61,31 +62,14 @@ public static partial class Simd
         }
         else
         {
-            // Cross-platform based on narrow with saturation
-
+            // Cross-platform based on narrow with saturation and SWAR
             // https://stackoverflow.com/questions/66371621/simd-string-to-unsigned-int-parsing-in-c-sharp-performance-improvement/66430672#66430672
-
-            var rawu16 = raw.AsUInt16();
-            //var rawu16 = a.AsUInt16();
-            var a2 = Vector128.Subtract(rawu16, Vector128.Create((ushort)(48)));
-            //var b2 = Vector128.Subtract(rawu16, Vector128.Create((ushort)(48 + 9)));
-            // PackUnsignedSaturate is faster but this path is not for x86
-            //var packed = Sse2.PackUnsignedSaturate(raw, raw); // convert digits from UTF16-LE to ASCII
-            var packed2 = Vector128.NarrowWithSaturation(a2, a2);
-            var val = packed2.AsUInt64()[0];
-
-            //var packed = Vector128.NarrowWithSaturation(rawu16, rawu16);
-            //var val = packed.AsUInt64()[0];
-
-            //var packed = Sse2.PackUnsignedSaturate(raw, raw); // convert digits from UTF16-LE to ASCII
-            //ulong val = Sse2.X64.ConvertToUInt64(packed.AsUInt64()); // extract to scalar
-            //var packed = Vector128.NarrowWithSaturation(a.AsUInt16(), a.AsUInt16());
-            //ulong val = packed.AsUInt64()[0]; // extract to scalar
-
-            //val -= 0x3030303030303030; // subtract '0' from each digit
-            //val <<= ((8 - text.Length) * 8); // shift off non-digit trash
-
-            // convert
+            // Convert SIMD to one 64-bit register with 8 x 8-bit "digits"
+            var rawU16 = raw.AsUInt16();
+            var zeroBased = Vector128.Subtract(rawU16, Vector128.Create((ushort)(48))); // 48 = 0x30 = '0'
+            var saturated = Vector128.NarrowWithSaturation(zeroBased, zeroBased);
+            var val = saturated.AsUInt64()[0];
+            // Multiply and sum the digits
             const ulong mask = 0x000000FF000000FF;
             const ulong mul1s = 0x000F424000000064; // 100 + (1000000ULL << 32)
             const ulong mul2s = 0x0000271000000001; // 1 + (10000ULL << 32)
@@ -93,8 +77,6 @@ public static partial class Simd
             val = (((val & mask) * mul1s) + (((val >> 16) & mask) * mul2s)) >> 32;
             value = (uint)val;
         }
-
         return true;
-
     }
 }
