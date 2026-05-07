@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 using BenchmarkDotNet.Attributes;
 
 namespace SimdSharp.ComparisonBenchmarks;
@@ -41,10 +42,14 @@ public unsafe class TryParseEightDigits
     [Benchmark()]
     public bool TryParseEightDigits_csFastFloat()
     {
-        fixed (char* chars = Text)
+        if (Sse41.IsSupported)
         {
-            return FastFloatAccessor.TryParseEightConsecutiveDigits_SIMD(null, chars, out var value);
+            fixed (char* chars = Text)
+            {
+                return FastFloatAccessor.TryParseEightConsecutiveDigits_SIMD(null, chars, out var value);
+            }
         }
+        return false;
     }
 
     // Not fair comparison, but just for baseline.
