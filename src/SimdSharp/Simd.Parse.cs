@@ -28,16 +28,16 @@ public static partial class Simd
     /// <summary>
     /// Detect eight consecutive digits and parse them a an unsigned int using SIMD instructions
     /// </summary>
-    /// <param name="start">pointer to the sequence of char to evaluate</param>
+    /// <param name="startRef">pointer to the sequence of char to evaluate</param>
     /// <param name="value">out : parsed value</param>
     /// <returns>bool : succes of operation : true meaning the sequence contains at least 8 consecutive digits</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal unsafe static bool TryParseEightDigits_Sse41(char* start, out uint value)
+    internal unsafe static bool TryParseEightDigits(ref char startRef, out uint value)
     {
         // escape if SIMD functions aren't available.
         //if (!Vector128.IsHardwareAccelerated) { value = 0; return false; }
 
-        Vector128<short> raw = Vector128.Load((short*)start); // Sse3.LoadDquVector128((short*)start);
+        Vector128<short> raw = Unsafe.ReadUnaligned<Vector128<short>>(ref Unsafe.As<char, byte>(ref startRef)); // Vector128.Load(ref startRef); // Sse3.LoadDquVector128((short*)start);
         var ascii0 = Vector128.Create((short)(48 + short.MinValue));
         var after_ascii9 = Vector128.Create((short)(short.MinValue + 9));
         Vector128<short> a = Vector128.Subtract(raw, ascii0);

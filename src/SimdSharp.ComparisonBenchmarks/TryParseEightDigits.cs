@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using BenchmarkDotNet.Attributes;
 
 namespace SimdSharp.ComparisonBenchmarks;
@@ -34,10 +35,7 @@ public unsafe class TryParseEightDigits
     [Benchmark()]
     public bool TryParseEightDigits_SimdSharp()
     {
-        fixed (char* chars = Text)
-        {
-            return Simd.TryParseEightDigits_Sse41(chars, out var value);
-        }
+        return Simd.TryParseEightDigits(ref MemoryMarshal.GetReference(Text.AsSpan()), out var value);
     }
 
     [Benchmark()]

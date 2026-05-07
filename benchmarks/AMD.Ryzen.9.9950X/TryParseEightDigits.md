@@ -13,6 +13,6 @@ MinIterationCount=3  WarmupCount=3
 ```
 | Method                          | Text     | Mean      | Ratio | Allocated | Alloc Ratio |
 |-------------------------------- |--------- |----------:|------:|----------:|------------:|
-| TryParseEightDigits_SimdSharp   | 12345678 | 0.2335 ns |  0.04 |         - |          NA |
-| TryParseEightDigits_csFastFloat | 12345678 | 0.2332 ns |  0.04 |         - |          NA |
-| TryParseEightDigits_BCL         | 12345678 | 6.0701 ns |  1.00 |         - |          NA |
+| TryParseEightDigits_SimdSharp   | 12345678 | 0.1884 ns |  0.03 |         - |          NA |
+| TryParseEightDigits_csFastFloat | 12345678 | 0.2026 ns |  0.03 |         - |          NA |
+| TryParseEightDigits_BCL         | 12345678 | 6.0186 ns |  1.00 |         - |          NA |
