@@ -69,8 +69,6 @@ public static partial class Simd
             var rawU16 = raw.AsUInt16();
             var zeroBased = Vector128.Subtract(rawU16, Vector128.Create((ushort)(48))); // 48 = 0x30 = '0'
             var saturated = Vector128.NarrowWithSaturation(zeroBased, zeroBased);
-            // Sse2 has better instructions but appears not to be used by BCL for some reason for NarrowWithSaturation
-            //var saturated = Sse2.PackUnsignedSaturate(zeroBased.AsInt16(), zeroBased.AsInt16()).AsByte();
             var val = saturated.AsUInt64()[0];
 
             value = ParseEightDigitsSWAR(val);
