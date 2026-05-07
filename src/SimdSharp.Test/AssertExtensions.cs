@@ -28,5 +28,12 @@ public static class AssertExtensions
                                          ref MemoryMarshal.GetReference(actual)),
                           message);
         }
+
+        public static void InconclusiveIf(bool inconclusive,
+            [CallerArgumentExpression(nameof(inconclusive))] string inconclusiveExpression = "")
+        {
+            if (inconclusive) { Assert.Inconclusive(inconclusiveExpression); }
+            ;
+        }
     }
 }
