@@ -64,19 +64,31 @@ public static partial class Simd
         {
             // Cross-platform based on narrow with saturation and SWAR
             // https://stackoverflow.com/questions/66371621/simd-string-to-unsigned-int-parsing-in-c-sharp-performance-improvement/66430672#66430672
+
             // Convert SIMD to one 64-bit register with 8 x 8-bit "digits"
             var rawU16 = raw.AsUInt16();
             var zeroBased = Vector128.Subtract(rawU16, Vector128.Create((ushort)(48))); // 48 = 0x30 = '0'
             var saturated = Vector128.NarrowWithSaturation(zeroBased, zeroBased);
+            // Sse2 has better instructions but appears not to be used by BCL for some reason for NarrowWithSaturation
+            //var saturated = Sse2.PackUnsignedSaturate(zeroBased.AsInt16(), zeroBased.AsInt16()).AsByte();
             var val = saturated.AsUInt64()[0];
-            // Multiply and sum the digits
-            const ulong mask = 0x000000FF000000FF;
-            const ulong mul1s = 0x000F424000000064; // 100 + (1000000ULL << 32)
-            const ulong mul2s = 0x0000271000000001; // 1 + (10000ULL << 32)
-            val = (val * 10) + (val >> 8);
-            val = (((val & mask) * mul1s) + (((val >> 16) & mask) * mul2s)) >> 32;
-            value = (uint)val;
+
+            value = ParseEightDigitsSWAR(val);
         }
         return true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    static uint ParseEightDigitsSWAR(ulong val)
+    {
+        // Multiply and sum the digits
+        const ulong mask = 0x000000FF000000FF;
+        const ulong mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
+        const ulong mul2 = 0x0000271000000001; // 1 + (10000ULL << 32)
+        val = (val * 10) + (val >> 8);
+        var valMask = mask & val;
+        var valShrMask = mask & (val >> 16);
+        val = ((valMask * mul1) + (valShrMask * mul2)) >> 32;
+        return (uint)val;
     }
 }
