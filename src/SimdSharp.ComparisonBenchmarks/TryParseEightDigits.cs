@@ -49,7 +49,10 @@ public unsafe class TryParseEightDigits
                 return FastFloatAccessor.TryParseEightConsecutiveDigits_SIMD(null, chars, out var value);
             }
         }
-        return false;
+        else
+        {
+            return TryParseEightDigits_BCL();
+        }
     }
 
     // Not fair comparison, but just for baseline.
