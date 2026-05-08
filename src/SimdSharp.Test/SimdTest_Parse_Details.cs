@@ -100,6 +100,8 @@ public unsafe class SimdTest_Parse_Details
 
             var trimmedLength = (nint)(end - ptr);
 
+            // TODO: Check length <= 32 after initial handling to ensure within simd limits
+
             var v = LoadLessThanLengthIndicis(ptr, trimmedLength);
 
             var ps = Vector256.Equals(v, Vector256.Create(p));
