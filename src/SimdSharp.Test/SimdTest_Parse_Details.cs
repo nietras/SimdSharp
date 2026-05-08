@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -11,6 +12,8 @@ namespace SimdSharp.Test;
 [TestClass]
 public unsafe class SimdTest_Parse_Details
 {
+    static readonly Action<string> Log = t => { Trace.WriteLine(t); Console.WriteLine(t); };
+
     [DataRow(true, "12345678")]
     [DataRow(true, "123456789")]
     [DataRow(false, "1")]
@@ -60,15 +63,65 @@ public unsafe class SimdTest_Parse_Details
         }
     }
 
+    [DataRow("+-0,123,456.789eE-21", (byte)'.', (byte)',')]
     [TestMethod]
-    public void SimdTest_Parse_Details_TryParseEightDigits_Avx512Test()
+    public void SimdTest_Parse_Details_Avx512Test(string text, byte decimalSeparator, byte groupSeparator)
     {
-        var text = "+-0,123,456.789eE-21";
+        var e = (byte)'e';
+        var E = (byte)'E';
+        var p = (byte)'+';
+        var m = (byte)'-';
+        var s = (byte)' ';
         fixed (char* chars = text)
         {
             var v = LoadLessThanLengthIndicis(chars, text.Length);
-            var a = AllValid(v, text.Length);
-            Assert.IsTrue(a);
+
+            var ps = Vector256.Equals(v, Vector256.Create(p));
+            var ms = Vector256.Equals(v, Vector256.Create(m));
+            var es = Vector256.Equals(v, Vector256.Create(e)) | Vector256.Equals(v, Vector256.Create(E));
+            var ds = Vector256.Equals(v, Vector256.Create(decimalSeparator));
+            var gs = Vector256.Equals(v, Vector256.Create(groupSeparator));
+            var ss = Vector256.Equals(v, Vector256.Create(s));
+
+            // No Avx2 for byte only sbyte, so cross-platform uses k masks which
+            // might be bad for what we want (revisit later)
+            var d0 = Vector256.GreaterThanOrEqual(v, Vector256.Create((byte)'0'));
+            var d9 = Vector256.LessThanOrEqual(v, Vector256.Create((byte)'9'));
+            var digits = d0 & d9;
+
+            var vectorDigits = Avx512Vbmi2.VL.Compress(Vector256<byte>.Zero, digits, v);
+
+            var maskps = Vector256.ExtractMostSignificantBits(ps);
+            var maskms = Vector256.ExtractMostSignificantBits(ms);
+            var maskes = Vector256.ExtractMostSignificantBits(es);
+            var maskds = Vector256.ExtractMostSignificantBits(ds);
+            var maskgs = Vector256.ExtractMostSignificantBits(gs);
+            var maskss = Vector256.ExtractMostSignificantBits(ss);
+            var maskdigits = Vector256.ExtractMostSignificantBits(digits);
+
+            var mask = maskps | maskms | maskes | maskds | maskgs | maskss | maskdigits;
+
+            //var all = ps | ms | es | ds | gs | ss | digits;
+            //var mask = Vector256.ExtractMostSignificantBits(all);
+
+            var count = BitOperations.PopCount(mask);
+
+            TraceMask(maskps); TraceMask(maskms); TraceMask(maskes);
+            TraceMask(maskds); TraceMask(maskgs); TraceMask(maskss);
+            TraceMask(maskdigits); TraceMask(mask);
+
+            Log($"{vectorDigits}");
+            Assert.AreEqual(text.Length, count);
+            //var a = AllValid(v, text.Length);
+            //Assert.IsTrue(a);
+            //Console.WriteLine(all);
+            //Console.WriteLine(count);
+        }
+
+        static void TraceMask(uint mask, [CallerArgumentExpression(nameof(mask))] string maskExpression = "")
+        {
+            var m = $"{maskExpression,12} = {Convert.ToString(mask, 2).PadLeft(32, '0')}";
+            Log(m);
         }
     }
 
