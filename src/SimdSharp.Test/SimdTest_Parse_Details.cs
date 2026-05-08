@@ -75,9 +75,30 @@ public unsafe class SimdTest_Parse_Details
         var p = (byte)'+';
         var m = (byte)'-';
         var s = (byte)' ';
+        var b = stackalloc byte[32];
         fixed (char* chars = text)
         {
             // Probably handle leading spaces and +- sequentially (non-SIMD)
+            // also trailing spaces. Then if does not contain eE the fast path
+            // for just digits, decimal, group. Else scientific path.
+
+            var sign = 0; // -1 is negative
+            var ptr = chars;
+            var end = chars + text.Length;
+            for (; ptr != end && IsAsciiWhitespace(*ptr); ++ptr) ;
+            var minus = *ptr == m;
+            sign = minus ? -1 : 0;
+            if (minus || *ptr == p)
+            {
+                ++ptr;
+                if (ptr == end) { return; }
+                // a sign must be followed by an integer or the decimal separator
+                if (!TryGetDigit(*ptr, out _) && (*ptr != decimalSeparator))
+                { return; }
+            }
+            for (; ptr != end && IsAsciiWhitespace(*end); --end) ;
+
+            var trimmedLength = end - ptr;
 
             var v = LoadLessThanLengthIndicis(chars, text.Length);
 
@@ -124,11 +145,35 @@ public unsafe class SimdTest_Parse_Details
             //Console.WriteLine(all);
             //Console.WriteLine(count);
         }
+        b[0] = 0;
 
         static void TraceMask(uint mask, [CallerArgumentExpression(nameof(mask))] string maskExpression = "")
         {
             var m = $"{maskExpression,12} = {Convert.ToString(mask, 2).PadLeft(32, '0')}";
             Log(m);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool TryGetDigit(char c, out uint digit)
+        {
+            var cc = (uint)(c - '0');
+            var res = cc <= ('9' - '0');
+            digit = cc;
+            return res;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool IsAsciiWhitespace(nuint c)
+        {
+            // ROS for one byte types can be read directly from metadata avoiding the array allocation.
+            ReadOnlySpan<bool> table = [
+                false, false, false, false, false, false, false, false, false,
+                true, true, true, true, true,
+                false, false, false, false, false, false, false, false, false,
+                false, false, false, false, false, false, false, false, false,
+                true];
+            // Avoid bound checking.
+            return c <= 32 && Unsafe.AddByteOffset(ref MemoryMarshal.GetReference(table), c);
         }
     }
 
