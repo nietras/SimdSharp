@@ -63,6 +63,9 @@ public unsafe class SimdTest_Parse_Details
         }
     }
 
+    // https://learn.microsoft.com/en-us/dotnet/api/system.single.parse?view=net-10.0 
+    // [ws][sign] [integral-digits[,]]integral-digits[.[fractional-digits]][e[sign]exponential-digits][ws]
+    // https://learn.microsoft.com/en-us/dotnet/standard/base-types/standard-numeric-format-strings
     [DataRow("+-0,123,456.789eE-21", (byte)'.', (byte)',')]
     [TestMethod]
     public void SimdTest_Parse_Details_Avx512Test(string text, byte decimalSeparator, byte groupSeparator)
@@ -74,6 +77,8 @@ public unsafe class SimdTest_Parse_Details
         var s = (byte)' ';
         fixed (char* chars = text)
         {
+            // Probably handle leading spaces and +- sequentially (non-SIMD)
+
             var v = LoadLessThanLengthIndicis(chars, text.Length);
 
             var ps = Vector256.Equals(v, Vector256.Create(p));
@@ -89,8 +94,6 @@ public unsafe class SimdTest_Parse_Details
             var d9 = Vector256.LessThanOrEqual(v, Vector256.Create((byte)'9'));
             var digits = d0 & d9;
 
-            var vectorDigits = Avx512Vbmi2.VL.Compress(Vector256<byte>.Zero, digits, v);
-
             var maskps = Vector256.ExtractMostSignificantBits(ps);
             var maskms = Vector256.ExtractMostSignificantBits(ms);
             var maskes = Vector256.ExtractMostSignificantBits(es);
@@ -98,6 +101,10 @@ public unsafe class SimdTest_Parse_Details
             var maskgs = Vector256.ExtractMostSignificantBits(gs);
             var maskss = Vector256.ExtractMostSignificantBits(ss);
             var maskdigits = Vector256.ExtractMostSignificantBits(digits);
+
+            // TODO: Need to isolate digits before after eE if any such
+
+            var vectorDigits = Avx512Vbmi2.VL.Compress(Vector256<byte>.Zero, digits, v);
 
             var mask = maskps | maskms | maskes | maskds | maskgs | maskss | maskdigits;
 
