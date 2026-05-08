@@ -66,7 +66,7 @@ public unsafe class SimdTest_Parse_Details
     // https://learn.microsoft.com/en-us/dotnet/api/system.single.parse?view=net-10.0 
     // [ws][sign] [integral-digits[,]]integral-digits[.[fractional-digits]][e[sign]exponential-digits][ws]
     // https://learn.microsoft.com/en-us/dotnet/standard/base-types/standard-numeric-format-strings
-    [DataRow("+-0,123,456.789eE-21", (byte)'.', (byte)',')]
+    [DataRow(" -0,123,456.789eE-21 ", (byte)'.', (byte)',')]
     [TestMethod]
     public void SimdTest_Parse_Details_Avx512Test(string text, byte decimalSeparator, byte groupSeparator)
     {
@@ -98,9 +98,9 @@ public unsafe class SimdTest_Parse_Details
             }
             for (; ptr != end && IsAsciiWhitespace(*end); --end) ;
 
-            var trimmedLength = end - ptr;
+            var trimmedLength = (nint)(end - ptr);
 
-            var v = LoadLessThanLengthIndicis(chars, text.Length);
+            var v = LoadLessThanLengthIndicis(ptr, trimmedLength);
 
             var ps = Vector256.Equals(v, Vector256.Create(p));
             var ms = Vector256.Equals(v, Vector256.Create(m));
@@ -139,7 +139,7 @@ public unsafe class SimdTest_Parse_Details
             TraceMask(maskdigits); TraceMask(mask);
 
             Log($"{vectorDigits}");
-            Assert.AreEqual(text.Length, count);
+            Assert.AreEqual(trimmedLength, count);
             //var a = AllValid(v, text.Length);
             //Assert.IsTrue(a);
             //Console.WriteLine(all);
