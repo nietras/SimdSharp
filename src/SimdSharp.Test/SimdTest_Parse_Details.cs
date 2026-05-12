@@ -70,6 +70,9 @@ public unsafe class SimdTest_Parse_Details
     [TestMethod]
     public void SimdTest_Parse_Details_Avx512Test(string text, byte decimalSeparator, byte groupSeparator)
     {
+        // http://0x80.pl/notesen/2018-10-18-simd-byte-lookup.html There are 7
+        // special bytes to check for or rather 6 if excluding space. This means
+        // the special case 1 in above for <= 8 distinct elements would suffice.
         var e = (byte)'e';
         var E = (byte)'E';
         var p = (byte)'+';
@@ -177,6 +180,10 @@ public unsafe class SimdTest_Parse_Details
             // Avoid bound checking.
             return c <= 32 && Unsafe.AddByteOffset(ref MemoryMarshal.GetReference(table), c);
         }
+
+        static bool IsWhite(uint ch) => (ch == 0x20) || ((ch - 0x09) <= (0x0D - 0x09));
+
+        static bool IsDigit(uint ch) => (ch - '0') <= 9;
     }
 
     [TestMethod]

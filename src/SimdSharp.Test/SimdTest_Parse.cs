@@ -6,6 +6,12 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace SimdSharp.Test;
 
+// dotnet runtime tests:
+// https://github.com/dotnet/runtime/blob/main/src/libraries/System.Runtime/tests/System.Runtime.Tests/System/SingleTests.cs#L259
+// https://github.com/dotnet/runtime/blob/main/src/libraries/Common/tests/System/RealParserTestsBase.cs
+// common number parsing:
+// https://github.com/dotnet/runtime/blob/main/src/libraries/Common/src/System/Number.Parsing.Common.cs
+
 [TestClass]
 public class SimdTest_Parse
 {
