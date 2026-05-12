@@ -181,7 +181,28 @@ public unsafe class SimdTest_Parse_Details
             return c <= 32 && Unsafe.AddByteOffset(ref MemoryMarshal.GetReference(table), c);
         }
 
-        static bool IsWhite(uint ch) => (ch == 0x20) || ((ch - 0x09) <= (0x0D - 0x09));
+        // Probably fastest
+        static bool IsWhiteBranch(uint ch) => (ch == 0x20) || ((ch - 0x09) <= (0x0D - 0x09));
+
+        static bool IsWhite(uint ch) => ((ch - 0x09) <= 4u) | (ch == 0x20);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool IsWhite2(uint ch)
+        {
+            var x = ch - '\t';
+            return (x <= 4u) | (x == 23u);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool IsWhite3(uint ch)
+        {
+            var x = ch - '\t';
+            if (x <= 4u) { return true; }
+            return ch == ' ';
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool IsWhite4(char ch) => (ch == ' ') | ((uint)(ch - '\t') <= 4u);
 
         static bool IsDigit(uint ch) => (ch - '0') <= 9;
     }
